@@ -10,3 +10,24 @@ message StoreChunk {
 message RetrieveFile {
     string fileName = 1;
 }
+
+message StorageMessageWrapper {
+    oneof msg {
+        StoreChunk storeChunkMsg = 1; //actual files info
+        RetrieveFile retrieveFileMsg = 2; //when to use
+    }
+}
+
+message StoreRequestToController {
+    string fileName = 1;
+    int32 chunkId = 2;
+}
+
+message StoreResponseFromController {
+    repeated StoreNodeInfo info = 1;
+}
+
+message StoreNodeInfo {
+    string ipaddress = 1;
+    int32 port = 2;
+}
