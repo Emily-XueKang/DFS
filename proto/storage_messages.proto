@@ -5,16 +5,22 @@ message StoreChunk {
     string fileName = 1;
     int32 chunkId = 2;
     bytes data = 3;
+    repeated StoreNodeInfo replicaToStore = 4;
 }
 
 message RetrieveFile {
     string fileName = 1;
+    string chunkId = 2;
+}
+
+message StoreResponseFromStorage {
+    bool success = 1;
 }
 
 message StorageMessageWrapper {
     oneof msg {
-        StoreChunk storeChunkMsg = 1; //actual files info
-        RetrieveFile retrieveFileMsg = 2; //when to use
+        StoreChunk storeChunkMsg = 1;
+        RetrieveFile retrieveFileMsg = 2;
     }
 }
 
@@ -27,7 +33,39 @@ message StoreResponseFromController {
     repeated StoreNodeInfo info = 1;
 }
 
+message UpdateChunkReplicaToController {
+    string fileName = 1;
+    int32 chunId = 2;
+    StoreNodeInfo nodeInfo = 3;
+}
+
+message RetrieveRequestToController {
+    string fileName = 1;
+}
+
+message ControllerMessageWrapper {
+    oneof msg {
+        StoreRequestToController storeFileMsg = 1;
+        RetrieveRequestToController retrieveFileMsg = 2;
+        UpdateChunkReplicaToController updateReplicaMsg = 3;
+    }
+}
+
 message StoreNodeInfo {
     string ipaddress = 1;
     int32 port = 2;
 }
+
+message ChunkMetaData {
+    string fileName = 1;
+    int32 chunkId = 2;
+    repeated StoreNodeInfo replicaLocations = 3;
+}
+
+message FileMetaData {
+    string fileName = 1;
+    int32 numOfChunks = 2;
+    repeated ChunkMetaData chunkList = 3;
+}
+
+
