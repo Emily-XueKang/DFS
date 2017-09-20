@@ -10,17 +10,19 @@ import java.util.Random;
 import edu.usfca.cs.dfs.StorageMessages.*;
 
 public class Controller {
+    final public static int CONTROLLER_PORT = 8081;
+
     private static ArrayList<StoreNodeInfo> activeNodes = new ArrayList<StoreNodeInfo>();
     private static ArrayList<String> files = new ArrayList<String>();
     private static HashMap<String, HashMap<Integer, ChunkMetaData>> fileChunks =
-            new HashMap<String, HashMap<Integer, ChunkMetaData>>();
+            new HashMap<String, HashMap<Integer, ChunkMetaData>>(); //map filename to a map of chunkid--chunkmetadata
     private static Random rand = new Random();
     private static Socket socket;
     public static void main(String[] args)
             throws Exception {
         // TODO: Populate the data structures, active nodes discovery
 
-        ServerSocket serversock = new ServerSocket(8080);
+        ServerSocket serversock = new ServerSocket(CONTROLLER_PORT);
         socket = serversock.accept();
         System.out.println("Starting controller...");
         while (true) {
@@ -88,7 +90,7 @@ public class Controller {
 
     private static void handleUpdateChunkReplica(UpdateChunkReplicaToController updateReplicaMsg) {
         String fileName = updateReplicaMsg.getFileName();
-        int chunkId = updateReplicaMsg.getChunId();
+        int chunkId = updateReplicaMsg.getChunkId();
         StoreNodeInfo nodeInfo = updateReplicaMsg.getNodeInfo();
         if (!fileChunks.containsKey(fileName)) {
             fileChunks.put(fileName, new HashMap<Integer, ChunkMetaData>());
@@ -112,6 +114,14 @@ public class Controller {
         fileChunks.put(fileName, chunkMap);
 
         // TODO: send updateReplica response back
+        UpdateChunkReplicaResponseFromController response = UpdateChunkReplicaResponseFromController.newBuilder()
+                .setSuccess(true)
+                .build();
+        try {
+            response.writeDelimitedTo(socket.getOutputStream());
+        } catch (IOException e) {
+            // TODO: log exception
+        }
 
     }
 }

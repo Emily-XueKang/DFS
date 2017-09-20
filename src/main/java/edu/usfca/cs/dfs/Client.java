@@ -4,21 +4,24 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 import edu.usfca.cs.dfs.StorageMessages.*;
+import edu.usfca.cs.dfs.Controller;
 import com.google.protobuf.ByteString;
 
+
 public class Client {
-    final private int chunksize = 2 * 1024 * 1024;
+    final public static int CHUNK_SIZE = 2 * 1024 * 1024;
 
     public static void main(String[] args)
     throws Exception{
         Client c = new Client();
         c.writeFile("file.txt");
+        c.retrieveFile("file.txt");
     }
 
     public boolean writeFile(String fileName) {
         boolean success = true;
         try {
-            Socket controllerSock = new Socket("localhost", 8080);
+            Socket controllerSock = new Socket("localhost", Controller.CONTROLLER_PORT);
             List<StoreChunk> chunkList = splitFile(fileName);
 
             for (StoreChunk sc : chunkList) {
@@ -56,10 +59,10 @@ public class Client {
         return success;
     }
 
-    public List<StoreChunk> splitFile(String filename){
+    private List<StoreChunk> splitFile(String filename){
         //where do the files in clients come from?
         int count = 0;
-        byte[] buffer = new byte[chunksize];
+        byte[] buffer = new byte[CHUNK_SIZE];
         List<StorageMessages.StoreChunk> chunks = new ArrayList<StorageMessages.StoreChunk>();
         File file = new File(filename);
         try (FileInputStream fis = new FileInputStream(file);
@@ -79,8 +82,42 @@ public class Client {
                 chunks.add(storeChunkMsg);
             }
         }catch (IOException e){
-
+            //TODO: log exception
         }
         return chunks;
     }
+
+    private boolean retrieveFile(String fileName) {
+        FileMetaData fileMetadata;
+        try {
+            Socket controllerSock = new Socket("localhost", Controller.CONTROLLER_PORT);
+            RetrieveRequestToController request = RetrieveRequestToController.newBuilder()
+                    .setFileName(fileName)
+                    .build();
+            request.writeDelimitedTo(controllerSock.getOutputStream());
+            fileMetadata = FileMetaData.parseDelimitedFrom(controllerSock.getInputStream());
+
+        } catch (IOException e) {
+            System.out.println("fail to query controller Node for fileMetaData " + e.getStackTrace());
+            return false;
+        }
+        if (fileMetadata == null) {
+            return false;
+        }
+        ChunksRetriever chunksRetriever = new ChunksRetriever(fileMetadata);
+        chunksRetriever.processChunks();
+        chunksRetriever.waitUntilFinished();
+        chunksRetriever.shutdown();
+        return true;
+//        return combineChunksToFile(fileMetadata);
+    }
+
+    private boolean combineChunksToFile(FileMetaData fileMetadata){
+        int numOfChunks = fileMetadata.getNumOfChunks();
+        String fileName = fileMetadata.getFileName();
+        // TODO: merge dosk chunk file to a single file in disk
+        return true;
+    }
+
+
 }

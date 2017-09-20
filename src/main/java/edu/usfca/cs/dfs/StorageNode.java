@@ -7,11 +7,16 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import com.google.protobuf.ByteString;
 import edu.usfca.cs.dfs.StorageMessages.*;
+import edu.usfca.cs.dfs.Controller;
+
+import java.util.HashSet;
 import java.util.List;
 
 public class StorageNode {
+    final public static int STORAGE_PORT = 8082;
 
     private ServerSocket srvSocket;
+    private HashSet<String> localChunks =  new HashSet<String>();
 
     public static void main(String[] args) throws Exception {
         String hostname = getHostname();
@@ -20,7 +25,7 @@ public class StorageNode {
     }
 
     public void start() throws Exception {
-        srvSocket = new ServerSocket(8080);
+        srvSocket = new ServerSocket(STORAGE_PORT);
         System.out.println("Listening...");
         while (true) {
             Socket socket = srvSocket.accept();
@@ -33,6 +38,13 @@ public class StorageNode {
                         .setSuccess(success)
                         .build();
                 resp.writeDelimitedTo(socket.getOutputStream());
+            } else if (msgWrapper.hasRetrieveChunkMsg()){
+                RetrieveRequestToStorage request = msgWrapper.getRetrieveChunkMsg();
+                ByteString data = retrieveChunk(request.getFileName(), request.getChunkId());
+                RetrieveResponseFromStorage resp = RetrieveResponseFromStorage.newBuilder()
+                        .setData(data)
+                        .build();
+                resp.writeDelimitedTo(socket.getOutputStream());
             }
         }
     }
@@ -43,19 +55,24 @@ public class StorageNode {
         String fileName = storeChunkMsg.getFileName();
         boolean success = storeChunkLocal(fileName, chunkId, storeChunkMsg.getData());
         if (success) {
+            // after write to local sync with controller node
             try {
-                Socket controllerSock = new Socket("localhost", 8080);
+                Socket controllerSock = new Socket("localhost", Controller.CONTROLLER_PORT);
                 StoreNodeInfo nodeInfo = StoreNodeInfo.newBuilder()
                         .setIpaddress(getHostname())
                         .setPort(getHostPort())
                         .build();
                 UpdateChunkReplicaToController updateReq = UpdateChunkReplicaToController.newBuilder()
-                        .setChunId(chunkId)
+                        .setChunkId(chunkId)
                         .setFileName(fileName)
                         .setNodeInfo(nodeInfo)
                         .build();
                 updateReq.writeDelimitedTo(controllerSock.getOutputStream());
-                // TODO: wait updateReplica response from replica info with controller Node
+                UpdateChunkReplicaResponseFromController res =
+                        UpdateChunkReplicaResponseFromController.parseDelimitedFrom(controllerSock.getInputStream());
+                if (!res.getSuccess()) {
+                    return false;
+                }
 
                 List<StoreNodeInfo> nodeList = storeChunkMsg.getReplicaToStoreList();
                 if (nodeList != null && nodeList.isEmpty()) {
@@ -85,8 +102,10 @@ public class StorageNode {
         FileOutputStream fs = null;
         boolean success = true;
         try {
-            fs = new FileOutputStream(fileName+chunkId);
+            String chunkFileName = fileName+"_"+chunkId;
+            fs = new FileOutputStream(chunkFileName);
             data.writeTo(fs);
+            localChunks.add(chunkFileName);
         } catch (IOException ex) {
             // TODO: log exception
             success = false;
@@ -94,6 +113,26 @@ public class StorageNode {
             try {fs.close();} catch (Exception ex) {/*ignore*/}
         }
         return success;
+    }
+
+    private ByteString retrieveChunk(String fileName, int chunkId) {
+        FileInputStream fs = null;
+        ByteString data = null;
+        String chunkFileName = fileName+"_"+chunkId;
+        if (!localChunks.contains(chunkFileName)) {
+            return null;
+        }
+        try {
+            fs = new FileInputStream(chunkFileName);
+            byte[] buffer = new byte[Client.CHUNK_SIZE];
+            fs.read(buffer);
+            data = ByteString.copyFrom(buffer);
+        } catch (IOException e) {
+
+        } finally {
+            try {fs.close();} catch (Exception ex) {/*ignore*/}
+        }
+        return data;
     }
 
     /**
