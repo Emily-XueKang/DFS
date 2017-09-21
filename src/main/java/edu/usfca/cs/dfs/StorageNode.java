@@ -5,23 +5,19 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import com.google.protobuf.ByteString;
 import edu.usfca.cs.dfs.StorageMessages.*;
-import edu.usfca.cs.dfs.Controller;
-import edu.usfca.cs.dfs.Client;
-import java.security.DigestInputStream;
-
 import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import com.google.protobuf.ByteString;
+
 
 public class StorageNode {
     final public static int STORAGE_PORT = 8082;
 
     private ServerSocket srvSocket;
-    private HashSet<String> localChunks =  new HashSet<String>(); //string : filename + chunkid
-    private HashSet<String> Checksums = new HashSet<String>(); //string : filemane + chunkid + MD5
+    private HashSet<String> localChunks = new HashSet<String>(); //string : filename + chunkid
 
     public static void main(String[] args) throws Exception {
         String hostname = getHostname();
@@ -184,7 +180,7 @@ public class StorageNode {
 
     private static int getHostPort() {
         // TODO: make port number const
-        return 8080;
+        return STORAGE_PORT;
     }
 
 }

@@ -1,6 +1,5 @@
 package edu.usfca.cs.dfs;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -18,23 +17,31 @@ public class Controller {
             new HashMap<String, HashMap<Integer, ChunkMetaData>>(); //map filename to a map of chunkid--chunkmetadata
     private static Random rand = new Random();
     private static Socket socket;
-    public static void main(String[] args)
-            throws Exception {
+    public static void main(String[] args) {
         // TODO: Populate the data structures, active nodes discovery
+        ServerSocket serversock = null;
+        try {
+            serversock = new ServerSocket(CONTROLLER_PORT);
+            System.out.println("Starting controller...");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
-        ServerSocket serversock = new ServerSocket(CONTROLLER_PORT);
-        socket = serversock.accept();
-        System.out.println("Starting controller...");
         while (true) {
-            ControllerMessageWrapper msgWrapper
-                    = ControllerMessageWrapper.parseDelimitedFrom(
-                    socket.getInputStream());
-            if (msgWrapper.hasStoreFileMsg()) {
-                handleStoreFile(msgWrapper.getStoreFileMsg());
-            } else if (msgWrapper.hasRetrieveFileMsg()) {
-                handleRetrieveFile(msgWrapper.getRetrieveFileMsg());
-            } else if (msgWrapper.hasUpdateReplicaMsg()) {
-                handleUpdateChunkReplica(msgWrapper.getUpdateReplicaMsg());
+            try {
+                socket = serversock.accept();
+                ControllerMessageWrapper msgWrapper
+                        = ControllerMessageWrapper.parseFrom(
+                        socket.getInputStream());
+                if (msgWrapper.hasStoreFileMsg()) {
+                    handleStoreFile(msgWrapper.getStoreFileMsg());
+                } else if (msgWrapper.hasRetrieveFileMsg()) {
+                    handleRetrieveFile(msgWrapper.getRetrieveFileMsg());
+                } else if (msgWrapper.hasUpdateReplicaMsg()) {
+                    handleUpdateChunkReplica(msgWrapper.getUpdateReplicaMsg());
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
     }
@@ -59,7 +66,8 @@ public class Controller {
                 response.writeDelimitedTo(socket.getOutputStream());
             }
         } catch (IOException e) {
-            // TODO: log exception
+            System.out.println("failed to handle retrieve file request");
+            e.printStackTrace();
         }
     }
 
@@ -84,7 +92,8 @@ public class Controller {
                 srfc.writeDelimitedTo(socket.getOutputStream());
             }
         } catch (IOException e) {
-            // TODO: log exception
+            System.out.println("failed to handle store file request");
+            e.printStackTrace();
         }
     }
 
@@ -120,7 +129,8 @@ public class Controller {
         try {
             response.writeDelimitedTo(socket.getOutputStream());
         } catch (IOException e) {
-            // TODO: log exception
+            System.out.println("failed to handle update replica request");
+            e.printStackTrace();
         }
 
     }

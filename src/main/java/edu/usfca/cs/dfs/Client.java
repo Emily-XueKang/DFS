@@ -4,7 +4,6 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 import edu.usfca.cs.dfs.StorageMessages.*;
-import edu.usfca.cs.dfs.Controller;
 import com.google.protobuf.ByteString;
 
 
@@ -14,8 +13,12 @@ public class Client {
     public static void main(String[] args)
     throws Exception{
         Client c = new Client();
-        c.writeFile("file.txt");
-        c.retrieveFile("file.txt");
+        c.writeFile("test");
+        c.retrieveFile("test");
+//        ByteString data = ByteString.copyFromUtf8("大雪");
+//        FileOutputStream fs = new FileOutputStream("test");
+//        data.writeTo(fs);
+
     }
 
     public boolean writeFile(String fileName) {
@@ -31,7 +34,7 @@ public class Client {
                         .setFileName(sc.getFileName())
                         .setChunkId(sc.getChunkId())
                         .build();
-                srtc.writeDelimitedTo(controllerSock.getOutputStream());
+                srtc.writeTo(controllerSock.getOutputStream());
                 StoreResponseFromController srfc = StoreResponseFromController.parseDelimitedFrom(controllerSock.getInputStream());
                 List<StoreNodeInfo> nodeList = srfc.getInfoList();
                 // write to first StoreNode and pass the remain of the list
@@ -80,9 +83,11 @@ public class Client {
                         .build();
                 count++;
                 chunks.add(storeChunkMsg);
+                System.out.println("spliting " + bytesAmount + " bytes of data into a chunk");
             }
         }catch (IOException e){
-            //TODO: log exception
+            System.out.println("Failed spliting file into chunks");
+            e.printStackTrace();
         }
         return chunks;
     }
@@ -98,7 +103,8 @@ public class Client {
             fileMetadata = FileMetaData.parseDelimitedFrom(controllerSock.getInputStream());
 
         } catch (IOException e) {
-            System.out.println("fail to query controller Node for fileMetaData " + e.getStackTrace());
+            System.out.println("fail to query controller Node for fileMetaData ");
+            e.printStackTrace();
             return false;
         }
         if (fileMetadata == null) {
