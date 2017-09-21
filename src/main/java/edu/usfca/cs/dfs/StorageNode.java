@@ -8,7 +8,11 @@ import java.net.UnknownHostException;
 import com.google.protobuf.ByteString;
 import edu.usfca.cs.dfs.StorageMessages.*;
 import edu.usfca.cs.dfs.Controller;
+import edu.usfca.cs.dfs.Client;
+import java.security.DigestInputStream;
 
+import java.security.MessageDigest;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 
@@ -16,7 +20,8 @@ public class StorageNode {
     final public static int STORAGE_PORT = 8082;
 
     private ServerSocket srvSocket;
-    private HashSet<String> localChunks =  new HashSet<String>();
+    private HashSet<String> localChunks =  new HashSet<String>(); //string : filename + chunkid
+    private HashSet<String> Checksums = new HashSet<String>(); //string : filemane + chunkid + MD5
 
     public static void main(String[] args) throws Exception {
         String hostname = getHostname();
@@ -88,7 +93,7 @@ public class StorageNode {
                     chunk.writeDelimitedTo(storageSock.getOutputStream());
                     storageSock.close();
                     // Don't wait for the response from pipeline writing
-                    // i.e. return once the data is write to local successfully
+                    // i.e. return once the data is write to local successfull
                 }
                 return true;
             } catch(Exception e){
@@ -97,36 +102,69 @@ public class StorageNode {
         }
         return false;
     }
+    public byte[] genChecksum(ByteString data){
+        byte[] databyte = new byte[Client.CHUNK_SIZE];
+        byte[] MD5data = new byte[16]; //MD5 HASH size = 128 bits
+        data.copyTo(databyte,0);
+        //Use MD5 algorithm
+        try{
+            MessageDigest md5 = MessageDigest.getInstance("MD5");
+            md5.update(databyte);
+            MD5data = md5.digest();
+            return MD5data;
+        }catch(java.security.NoSuchAlgorithmException e){
+            //TODO: Print exception message
+            System.out.println("fail to generate md5 for chunk");
+        }finally {
+            return MD5data;
+        }
+    }
 
     private boolean storeChunkLocal(String fileName, int chunkId, ByteString data){
         FileOutputStream fs = null;
+        FileOutputStream fsmd5 = null;
         boolean success = true;
         try {
             String chunkFileName = fileName+"_"+chunkId;
+            String chunkMD5Name = fileName+"_"+chunkId+"_MD5";
             fs = new FileOutputStream(chunkFileName);
             data.writeTo(fs);
             localChunks.add(chunkFileName);
+            fsmd5 = new FileOutputStream(chunkMD5Name);
+            byte[] chunkMD5= genChecksum(data);
+            fsmd5.write(chunkMD5);
         } catch (IOException ex) {
             // TODO: log exception
             success = false;
         } finally {
-            try {fs.close();} catch (Exception ex) {/*ignore*/}
+            try {fs.close();
+                 fsmd5.close();
+            } catch (Exception ex) {/*ignore*/}
         }
         return success;
     }
 
     private ByteString retrieveChunk(String fileName, int chunkId) {
         FileInputStream fs = null;
+        FileInputStream fschecksum = null;
         ByteString data = null;
         String chunkFileName = fileName+"_"+chunkId;
+        String chunkChecksum = fileName+"_"+chunkId+"_MD5";
         if (!localChunks.contains(chunkFileName)) {
             return null;
         }
         try {
             fs = new FileInputStream(chunkFileName);
-            byte[] buffer = new byte[Client.CHUNK_SIZE];
-            fs.read(buffer);
-            data = ByteString.copyFrom(buffer);
+            fschecksum = new FileInputStream(chunkChecksum);
+
+            data = ByteString.readFrom(fs,Client.CHUNK_SIZE);
+            byte[] checksum_generated = genChecksum(data);
+            byte[] checksum_from_disk  = new byte[16];
+            fschecksum.read(checksum_from_disk);
+            if(!Arrays.equals(checksum_from_disk,checksum_generated)){
+                System.out.println("checksum failed, invalid file chunk");
+                return null;
+            }
         } catch (IOException e) {
 
         } finally {

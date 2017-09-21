@@ -121,7 +121,7 @@ public class ChunksRetriever {
                 ByteString data = resp.getData();
 //                fs = new FileOutputStream(chunkFileName);
 //                data.writeTo(fs);
-                dataMap.put(chunkId, data);
+                dataMap.put(chunkId, data); //retrieve to client memory, then combine from memory to disk
             } catch (IOException e) {
                System.out.println("Unable to process chunk: {}" + chunkFileName);
                System.out.println(e.getStackTrace());

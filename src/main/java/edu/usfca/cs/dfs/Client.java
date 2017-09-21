@@ -115,7 +115,7 @@ public class Client {
     private boolean combineChunksToFile(FileMetaData fileMetadata){
         int numOfChunks = fileMetadata.getNumOfChunks();
         String fileName = fileMetadata.getFileName();
-        // TODO: merge dosk chunk file to a single file in disk
+        // TODO: merge disk chunk file to a single file in disk
         return true;
     }
 

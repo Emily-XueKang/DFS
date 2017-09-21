@@ -77,4 +77,8 @@ message FileMetaData {
     repeated ChunkMetaData chunkList = 4;
 }
 
+message HeartBeatFromStorage {
+    repeated string changes = 1;
+}
+
 
