@@ -58,15 +58,25 @@ public class ChunksRetriever {
         combineChunks();
     }
 
-
     private void combineChunks() {
         FileOutputStream fs = null;
+        String outputFileName =  fileMetaData.getFileName() + "_received";
+        int numOfChunks = fileMetaData.getNumOfChunks();
         try {
-            for (int i = 0; i < fileMetaData.getNumOfChunks(); i++) {
+            for (int i = 0; i < numOfChunks - 1; i++) {
                 ByteString data = dataMap.get(i);
-                fs = new FileOutputStream(fileMetaData.getFileName(), true);
+                fs = new FileOutputStream(outputFileName, true);
                 data.writeTo(fs);
             }
+            // handle last chunk specially since the chunk is likely not full of useful data
+            int lastChunkSize = (int)(fileMetaData.getFileSize() - Client.CHUNK_SIZE * (numOfChunks - 1));
+            ByteString data = dataMap.get(numOfChunks - 1);
+            byte[] lastBytes = new byte[lastChunkSize];
+            data.copyTo(lastBytes, 0, 0, lastChunkSize);
+            System.out.println("last chunk size: " + lastChunkSize);
+            fs = new FileOutputStream(outputFileName, true);
+            fs.write(lastBytes);
+            System.out.println("Chunks combined to file successfully");
         } catch (IOException e) {
             System.out.println("fail to combine chunks");
         } finally {
@@ -114,7 +124,10 @@ public class ChunksRetriever {
                         .setChunkId(chunkId)
                         .setFileName(fileName)
                         .build();
-                request.writeDelimitedTo(storageSock.getOutputStream());
+                StorageMessageWrapper msgWrapper = StorageMessageWrapper.newBuilder()
+                        .setRetrieveChunkMsg(request)
+                        .build();
+                msgWrapper.writeDelimitedTo(storageSock.getOutputStream());
                 RetrieveResponseFromStorage resp =
                         RetrieveResponseFromStorage.parseDelimitedFrom(storageSock.getInputStream());
 
@@ -122,8 +135,9 @@ public class ChunksRetriever {
 //                fs = new FileOutputStream(chunkFileName);
 //                data.writeTo(fs);
                 dataMap.put(chunkId, data); //retrieve to client memory, then combine from memory to disk
+                System.out.println("Retrieved chunk: " + chunkFileName);
             } catch (IOException e) {
-               System.out.println("Unable to process chunk: {}" + chunkFileName);
+               System.out.println("Unable to process chunk: " + chunkFileName);
                System.out.println(e.getStackTrace());
             }
             finally {

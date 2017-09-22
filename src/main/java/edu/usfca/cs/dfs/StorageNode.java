@@ -19,39 +19,42 @@ public class StorageNode {
     private ServerSocket srvSocket;
     private HashSet<String> localChunks = new HashSet<String>(); //string : filename + chunkid
 
-    public static void main(String[] args) throws Exception {
-        String hostname = getHostname();
-        System.out.println("Starting storage node on " + hostname + "...");
+    public static void main(String[] args) {
+        System.out.println("Starting storage node...");
         new StorageNode().start();
     }
 
-    public void start() throws Exception {
-        srvSocket = new ServerSocket(STORAGE_PORT);
-        System.out.println("Listening...");
-        while (true) {
-            Socket socket = srvSocket.accept();
-            StorageMessages.StorageMessageWrapper msgWrapper
-                    = StorageMessages.StorageMessageWrapper.parseDelimitedFrom(
-                    socket.getInputStream());
-            if (msgWrapper.hasStoreChunkMsg()) {
-                boolean success = storeChunk(msgWrapper.getStoreChunkMsg());
-                StoreResponseFromStorage resp = StoreResponseFromStorage.newBuilder()
-                        .setSuccess(success)
-                        .build();
-                resp.writeDelimitedTo(socket.getOutputStream());
-            } else if (msgWrapper.hasRetrieveChunkMsg()){
-                RetrieveRequestToStorage request = msgWrapper.getRetrieveChunkMsg();
-                ByteString data = retrieveChunk(request.getFileName(), request.getChunkId());
-                RetrieveResponseFromStorage resp = RetrieveResponseFromStorage.newBuilder()
-                        .setData(data)
-                        .build();
-                resp.writeDelimitedTo(socket.getOutputStream());
+    public void start() {
+        try {
+            srvSocket = new ServerSocket(STORAGE_PORT);
+            System.out.println(" storage node started");
+            while (true) {
+                Socket socket = srvSocket.accept();
+                StorageMessages.StorageMessageWrapper msgWrapper
+                        = StorageMessages.StorageMessageWrapper.parseDelimitedFrom(
+                        socket.getInputStream());
+                if (msgWrapper.hasStoreChunkMsg()) {
+                    boolean success = storeChunk(msgWrapper.getStoreChunkMsg());
+                    StoreResponseFromStorage resp = StoreResponseFromStorage.newBuilder()
+                            .setSuccess(success)
+                            .build();
+                    resp.writeDelimitedTo(socket.getOutputStream());
+                } else if (msgWrapper.hasRetrieveChunkMsg()) {
+                    RetrieveRequestToStorage request = msgWrapper.getRetrieveChunkMsg();
+                    ByteString data = retrieveChunk(request.getFileName(), request.getChunkId());
+                    RetrieveResponseFromStorage resp = RetrieveResponseFromStorage.newBuilder()
+                            .setData(data)
+                            .build();
+                    resp.writeDelimitedTo(socket.getOutputStream());
+                }
             }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
     private boolean storeChunk(StoreChunk storeChunkMsg) {
-        System.out.println("Storing file name: " + storeChunkMsg.getFileName());
+        System.out.println("Storing file name: " + storeChunkMsg.getFileName() + "chunk Id: " + storeChunkMsg.getChunkId());
         int chunkId = storeChunkMsg.getChunkId();
         String fileName = storeChunkMsg.getFileName();
         boolean success = storeChunkLocal(fileName, chunkId, storeChunkMsg.getData());
@@ -68,7 +71,10 @@ public class StorageNode {
                         .setFileName(fileName)
                         .setNodeInfo(nodeInfo)
                         .build();
-                updateReq.writeDelimitedTo(controllerSock.getOutputStream());
+                ControllerMessageWrapper msgWraper = ControllerMessageWrapper.newBuilder()
+                        .setUpdateReplicaMsg(updateReq)
+                        .build();
+                msgWraper.writeDelimitedTo(controllerSock.getOutputStream());
                 UpdateChunkReplicaResponseFromController res =
                         UpdateChunkReplicaResponseFromController.parseDelimitedFrom(controllerSock.getInputStream());
                 if (!res.getSuccess()) {
@@ -86,7 +92,10 @@ public class StorageNode {
                             .setData(storeChunkMsg.getData())
                             .addAllReplicaToStore(nodeList)
                             .build();
-                    chunk.writeDelimitedTo(storageSock.getOutputStream());
+                    StorageMessageWrapper msgWrapper = StorageMessageWrapper.newBuilder()
+                            .setStoreChunkMsg(chunk)
+                            .build();
+                    msgWrapper.writeDelimitedTo(storageSock.getOutputStream());
                     storageSock.close();
                     // Don't wait for the response from pipeline writing
                     // i.e. return once the data is write to local successfull

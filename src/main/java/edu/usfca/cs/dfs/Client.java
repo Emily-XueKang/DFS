@@ -15,48 +15,64 @@ public class Client {
         Client c = new Client();
         c.writeFile("test");
         c.retrieveFile("test");
-//        ByteString data = ByteString.copyFromUtf8("大雪");
-//        FileOutputStream fs = new FileOutputStream("test");
-//        data.writeTo(fs);
-
     }
 
     public boolean writeFile(String fileName) {
         boolean success = true;
         try {
             Socket controllerSock = new Socket("localhost", Controller.CONTROLLER_PORT);
-            List<StoreChunk> chunkList = splitFile(fileName);
 
+            long fileSizeInBytes = new File(fileName).length();
+            List<StoreChunk> chunkList = splitFile(fileName);
             for (StoreChunk sc : chunkList) {
                 //for every chunk in this file, send request to controller,
                 // then controller will send back a list of nodes for replica of this chunk
                 StoreRequestToController srtc = StoreRequestToController.newBuilder()
                         .setFileName(sc.getFileName())
                         .setChunkId(sc.getChunkId())
+                        .setNumOfChunks(chunkList.size())
+                        .setFileSize(fileSizeInBytes)
                         .build();
-                srtc.writeTo(controllerSock.getOutputStream());
+                ControllerMessageWrapper ControllerMsgWrapper = ControllerMessageWrapper.newBuilder()
+                        .setStoreFileMsg(srtc)
+                        .build();
+                ControllerMsgWrapper.writeDelimitedTo(controllerSock.getOutputStream());
                 StoreResponseFromController srfc = StoreResponseFromController.parseDelimitedFrom(controllerSock.getInputStream());
+
                 List<StoreNodeInfo> nodeList = srfc.getInfoList();
+                if (nodeList.isEmpty()) {
+                    throw new Exception("no available nodes to store file: " + fileName);
+                }
                 // write to first StoreNode and pass the remain of the list
-                StoreNodeInfo targetNode = nodeList.remove(0);
+                StoreNodeInfo targetNode = nodeList.get(0);
+                List<StoreNodeInfo> remainNodes = new ArrayList<>(nodeList.size()-1);
+                for (int idx = 1; idx < nodeList.size(); idx++) {
+                    remainNodes.add(nodeList.get(idx));
+                }
+                System.out.println(nodeList.size() + " nodes available to store file, one node selected : " + targetNode);
                 // setup a new socket to write to storageNode
                 Socket storageSock = new Socket(targetNode.getIpaddress(), targetNode.getPort());
                 StoreChunk chunk = StoreChunk.newBuilder()
                         .setFileName(fileName)
                         .setChunkId(sc.getChunkId())
                         .setData(sc.getData())
-                        .addAllReplicaToStore(nodeList)
+                        .addAllReplicaToStore(remainNodes)
                         .build();
-                chunk.writeDelimitedTo(storageSock.getOutputStream());
+                StorageMessageWrapper storageMsgWrapper = StorageMessageWrapper.newBuilder()
+                        .setStoreChunkMsg(chunk)
+                        .build();
+                storageMsgWrapper.writeDelimitedTo(storageSock.getOutputStream());
 
                 // wait response from SN
                 StoreResponseFromStorage storeResp = StoreResponseFromStorage.parseDelimitedFrom(storageSock.getInputStream());
                 success = storeResp.getSuccess();
+                System.out.println("store chunk success: " + success);
+
                 storageSock.close();
             }
             controllerSock.close();
         } catch (Exception e) {
-            // TODO: log exception
+            e.printStackTrace();
             success = false;
         }
         return success;
@@ -83,8 +99,10 @@ public class Client {
                         .build();
                 count++;
                 chunks.add(storeChunkMsg);
-                System.out.println("spliting " + bytesAmount + " bytes of data into a chunk");
+                System.out.println("spliting " + bytesAmount + " bytes of data into one chunk...");
             }
+            System.out.println("File spilitted to " + count + " chunks");
+
         }catch (IOException e){
             System.out.println("Failed spliting file into chunks");
             e.printStackTrace();
@@ -96,8 +114,11 @@ public class Client {
         FileMetaData fileMetadata;
         try {
             Socket controllerSock = new Socket("localhost", Controller.CONTROLLER_PORT);
-            RetrieveRequestToController request = RetrieveRequestToController.newBuilder()
+            RetrieveRequestToController rrtc = RetrieveRequestToController.newBuilder()
                     .setFileName(fileName)
+                    .build();
+            ControllerMessageWrapper request = ControllerMessageWrapper.newBuilder()
+                    .setRetrieveFileMsg(rrtc)
                     .build();
             request.writeDelimitedTo(controllerSock.getOutputStream());
             fileMetadata = FileMetaData.parseDelimitedFrom(controllerSock.getInputStream());
@@ -107,7 +128,8 @@ public class Client {
             e.printStackTrace();
             return false;
         }
-        if (fileMetadata == null) {
+        if (fileMetadata == null || !fileMetadata.getIsCompleted()) {
+            System.out.println("File" + fileName + "is corrupted or still being written");
             return false;
         }
         ChunksRetriever chunksRetriever = new ChunksRetriever(fileMetadata);
@@ -115,15 +137,5 @@ public class Client {
         chunksRetriever.waitUntilFinished();
         chunksRetriever.shutdown();
         return true;
-//        return combineChunksToFile(fileMetadata);
     }
-
-    private boolean combineChunksToFile(FileMetaData fileMetadata){
-        int numOfChunks = fileMetadata.getNumOfChunks();
-        String fileName = fileMetadata.getFileName();
-        // TODO: merge disk chunk file to a single file in disk
-        return true;
-    }
-
-
 }

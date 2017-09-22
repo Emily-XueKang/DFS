@@ -31,6 +31,8 @@ message StorageMessageWrapper {
 message StoreRequestToController {
     string fileName = 1;
     int32 chunkId = 2;
+    int64 fileSize = 3;
+    int32 numOfChunks = 4;
 }
 
 message StoreResponseFromController {
@@ -73,8 +75,9 @@ message ChunkMetaData {
 message FileMetaData {
     string fileName = 1;
     int32 numOfChunks = 2;
-    int32 fileSize = 3;
+    int64 fileSize = 3;
     repeated ChunkMetaData chunkList = 4;
+    bool isCompleted = 5;
 }
 
 message HeartBeatFromStorage {
