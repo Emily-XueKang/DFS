@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
@@ -161,7 +160,7 @@ public class Controller {
         }
         fileChunks.put(fileName, chunkMap);
 
-        // TODO: send updateReplica response back
+        // send updateReplica response back
         UpdateChunkReplicaResponseFromController response = UpdateChunkReplicaResponseFromController.newBuilder()
                 .setSuccess(true)
                 .build();
