@@ -20,11 +20,16 @@ public class Controller {
     private static Random rand = new Random();
     private static Socket socket;
     public static void main(String[] args) {
-        System.out.println("Starting controller...");
+        System.out.println("Starting controller on port " + CONTROLLER_PORT + "...");
         // TODO: Load data structures to memory, active nodes discovery
         StoreNodeInfo testNode = StoreNodeInfo.newBuilder()
                 .setIpaddress("localhost")
                 .setPort(8082)
+                .build();
+        activeNodes.add(testNode);
+        testNode = StoreNodeInfo.newBuilder()
+                .setIpaddress("localhost")
+                .setPort(8083)
                 .build();
         activeNodes.add(testNode);
         ServerSocket serversock = null;
@@ -101,7 +106,7 @@ public class Controller {
                         .build();
                 srfc.writeDelimitedTo(socket.getOutputStream());
 
-                // construct a chunkMetada to be store in files as truth record
+                // construct a chunkMetadata to be store in files as truth record
                 ChunkMetaData chunkMetaData = ChunkMetaData.newBuilder()
                         .setChunkId(chunkId)
                         .setFileName(fileName)
@@ -109,7 +114,7 @@ public class Controller {
                         .build();
                 FileMetaData fileMetaData = null;
                 if (!files.containsKey(fileName)) { // a new file chunk to be stored
-                     fileMetaData = FileMetaData.newBuilder()
+                    fileMetaData = FileMetaData.newBuilder()
                             .setFileName(fileName)
                             .setFileSize(storeFileMsg.getFileSize())
                             .setNumOfChunks(storeFileMsg.getNumOfChunks())

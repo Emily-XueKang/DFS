@@ -7,27 +7,42 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import edu.usfca.cs.dfs.StorageMessages.*;
 import java.security.MessageDigest;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import com.google.protobuf.ByteString;
+import org.apache.commons.cli.*;
 
 
 public class StorageNode {
-    final public static int STORAGE_PORT = 8082;
+    public static int STORAGE_PORT = 8082;
+    private static Options options = new Options();
 
     private ServerSocket srvSocket;
     private HashSet<String> localChunks = new HashSet<String>(); //string : filename + chunkid
 
     public static void main(String[] args) {
         System.out.println("Starting storage node...");
+        options.addOption("p", "port", true, "port to use");
+        CommandLineParser parser = new BasicParser();
+        CommandLine cmd = null;
+        try {
+            cmd = parser.parse(options, args);
+            if (cmd.hasOption("p")) {
+                STORAGE_PORT = Integer.parseInt(cmd.getOptionValue("p"));
+            }
+        } catch (Exception e) {
+            System.out.println("can't parse command line argument");
+        }
+
         new StorageNode().start();
     }
 
     public void start() {
         try {
             srvSocket = new ServerSocket(STORAGE_PORT);
-            System.out.println(" storage node started");
+            System.out.println(" storage node started on port " + STORAGE_PORT);
             while (true) {
                 Socket socket = srvSocket.accept();
                 StorageMessages.StorageMessageWrapper msgWrapper
@@ -54,11 +69,13 @@ public class StorageNode {
     }
 
     private boolean storeChunk(StoreChunk storeChunkMsg) {
-        System.out.println("Storing file name: " + storeChunkMsg.getFileName() + "chunk Id: " + storeChunkMsg.getChunkId());
         int chunkId = storeChunkMsg.getChunkId();
+        System.out.println("Storing file name: " + storeChunkMsg.getFileName() + "chunk Id: " + chunkId);
         String fileName = storeChunkMsg.getFileName();
         boolean success = storeChunkLocal(fileName, chunkId, storeChunkMsg.getData());
+
         if (success) {
+            System.out.println("Stored file name: " + storeChunkMsg.getFileName() + "chunk Id: " + chunkId + " successfully");
             // after write to local sync with controller node
             try {
                 Socket controllerSock = new Socket("localhost", Controller.CONTROLLER_PORT);
@@ -78,31 +95,41 @@ public class StorageNode {
                 UpdateChunkReplicaResponseFromController res =
                         UpdateChunkReplicaResponseFromController.parseDelimitedFrom(controllerSock.getInputStream());
                 if (!res.getSuccess()) {
+                    System.out.println("Failed to sync replica write success with Controller Node");
                     return false;
                 }
+                System.out.println("Succeed to sync replica write success with Controller Node");
 
                 List<StoreNodeInfo> nodeList = storeChunkMsg.getReplicaToStoreList();
-                if (nodeList != null && nodeList.isEmpty()) {
-                    StoreNodeInfo targetNode = nodeList.remove(0);
+                if (nodeList != null && !nodeList.isEmpty()) {
+                    StoreNodeInfo targetNode = nodeList.get(0);
+                    List<StoreNodeInfo> remainNodes = new ArrayList<>(nodeList.size()-1);
+                    for (int idx = 1; idx < nodeList.size(); idx++) { //remove first node which is nodeList.get(0), continue the pipeline from the second node which is nodeList.get(1)
+                        remainNodes.add(nodeList.get(idx));
+                    }
+                    System.out.println("remaining nodes size in pipeline: " + remainNodes.size());
+
                     // setup a new socket to write to storageNode
                     Socket storageSock = new Socket(targetNode.getIpaddress(), targetNode.getPort());
                     StoreChunk chunk = StoreChunk.newBuilder()
                             .setFileName(storeChunkMsg.getFileName())
                             .setChunkId(storeChunkMsg.getChunkId())
                             .setData(storeChunkMsg.getData())
-                            .addAllReplicaToStore(nodeList)
+                            .addAllReplicaToStore(remainNodes)
                             .build();
                     StorageMessageWrapper msgWrapper = StorageMessageWrapper.newBuilder()
                             .setStoreChunkMsg(chunk)
                             .build();
                     msgWrapper.writeDelimitedTo(storageSock.getOutputStream());
+                    System.out.println("Forwarding to node: " + targetNode.getIpaddress() + ":" + targetNode.getPort());
+
                     storageSock.close();
                     // Don't wait for the response from pipeline writing
-                    // i.e. return once the data is write to local successfull
+                    // i.e. return once the data is write to local successfully
                 }
                 return true;
             } catch(Exception e){
-                // TODO: log exception
+                e.printStackTrace();
             }
         }
         return false;
@@ -143,7 +170,7 @@ public class StorageNode {
             success = false;
         } finally {
             try {fs.close();
-                 fsmd5.close();
+                fsmd5.close();
             } catch (Exception ex) {/*ignore*/}
         }
         return success;
