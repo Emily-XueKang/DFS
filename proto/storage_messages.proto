@@ -54,6 +54,7 @@ message ControllerMessageWrapper {
         StoreRequestToController storeFileMsg = 1;
         RetrieveRequestToController retrieveFileMsg = 2;
         UpdateChunkReplicaToController updateReplicaMsg = 3;
+        SNHeartBeat heartbeatMsg = 4;
     }
 }
 
@@ -80,8 +81,15 @@ message FileMetaData {
     bool isCompleted = 5;
 }
 
-message HeartBeatFromStorage {
-    repeated string changes = 1;
+message SNHeartBeat {
+    repeated SNchunkInfo chunks = 1;
+    int64 space = 2;
+    string ipaddress = 3;
+    int32 port = 4;
+}
+message SNchunkInfo {
+    string fileName = 1;
+    int32 chunkId = 2;
 }
 
 

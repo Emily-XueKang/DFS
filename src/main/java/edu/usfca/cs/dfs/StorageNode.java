@@ -1,6 +1,7 @@
 package edu.usfca.cs.dfs;
 
 import java.io.*;
+import java.lang.reflect.Array;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -11,6 +12,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
+
 import com.google.protobuf.ByteString;
 import org.apache.commons.cli.*;
 
@@ -20,8 +23,8 @@ public class StorageNode {
     private static Options options = new Options();
 
     private ServerSocket srvSocket;
-    private HashSet<String> localChunks = new HashSet<String>(); //string : filename + chunkid
-
+    private HashSet<String> localChunks = new HashSet<String>(); //string : filename + chunkid, for checking purpose
+    private ConcurrentLinkedQueue<SNchunkInfo> chunkInfos= new ConcurrentLinkedQueue<SNchunkInfo>(); //simple chunk info, updated and sent by backgroud thread for heartbeat message
     public static void main(String[] args) {
         System.out.println("Starting storage node...");
         options.addOption("p", "port", true, "port to use");
@@ -35,8 +38,47 @@ public class StorageNode {
         } catch (Exception e) {
             System.out.println("can't parse command line argument");
         }
+        StorageNode sn = new StorageNode();
+        Thread background = sn.new HeartBeat();
+        background.start();
+        sn.start();
+    }
 
-        new StorageNode().start();
+    //inner class, background thread for heartbeat
+    public class HeartBeat extends Thread{
+        @Override
+        public void run(){
+            //need to scan all data in SN and get the change
+            System.out.println("backgroud");
+            while(true){
+                File pathfile = new File("/"); //unix/linux
+                //File pathfile = new File("c:"); //windows
+                long freespace = pathfile.getUsableSpace();
+                ArrayList<SNchunkInfo> ci = new ArrayList<>();
+                while(!chunkInfos.isEmpty()){
+                    ci.add(chunkInfos.poll());
+                } //empty chunkInfos queue, ensure every time we only send the changes in SN
+                try {
+                    SNHeartBeat heartBeat = SNHeartBeat.newBuilder()
+                            .addAllChunks(ci)
+                            .setSpace(freespace)
+                            .setIpaddress(getHostname()) //may throw UnknownHostException
+                            .setPort(getHostPort())
+                            .build();
+                    Socket controllerSock = new Socket("localhost", Controller.CONTROLLER_PORT);
+                    heartBeat.writeDelimitedTo(controllerSock.getOutputStream());
+                    System.out.println("sent heartbeat...");
+                } catch (IOException e) {
+                    System.out.println("failed to send update info through heartbeat");
+                    e.printStackTrace();
+                }
+                try {
+                    Thread.sleep(5000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 
     public void start() {
@@ -100,6 +142,7 @@ public class StorageNode {
                 }
                 System.out.println("Succeed to sync replica write success with Controller Node");
 
+                //the pipeline replication process
                 List<StoreNodeInfo> nodeList = storeChunkMsg.getReplicaToStoreList();
                 if (nodeList != null && !nodeList.isEmpty()) {
                     StoreNodeInfo targetNode = nodeList.get(0);
@@ -218,5 +261,7 @@ public class StorageNode {
         // TODO: make port number const
         return STORAGE_PORT;
     }
+
+
 
 }

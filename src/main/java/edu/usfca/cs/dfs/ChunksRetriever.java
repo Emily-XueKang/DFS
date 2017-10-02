@@ -96,7 +96,7 @@ public class ChunksRetriever {
     /**
      * ChunkWorker
      * An inner class that represents a piece of Runnable work.
-     * In the run() method, it call/transfer the Storage Node for a specify chunkId
+     * In the run() method, it call/transfer the Storage Node for a specific chunkId
      * and store to a local file
      */
     public class ChunkWorker implements Runnable {

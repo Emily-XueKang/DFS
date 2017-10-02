@@ -3,9 +3,7 @@ package edu.usfca.cs.dfs;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import edu.usfca.cs.dfs.StorageMessages.*;
@@ -51,21 +49,54 @@ public class Controller {
                     handleRetrieveFile(msgWrapper.getRetrieveFileMsg());
                 } else if (msgWrapper.hasUpdateReplicaMsg()) {
                     handleUpdateChunkReplica(msgWrapper.getUpdateReplicaMsg());
+                } else if (msgWrapper.hasHeartbeatMsg()){
+                    handleHeartBeat(msgWrapper.getHeartbeatMsg());
                 }
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
     }
+    private static void handleHeartBeat(SNHeartBeat heartbeatMsg){
+        ArrayList<SNchunkInfo> ci = (ArrayList<SNchunkInfo>) heartbeatMsg.getChunksList();
+        String fileName;
+        int chunkId;
+        for(SNchunkInfo i : ci){
+            fileName = i.getFileName();
+            chunkId = i.getChunkId();
+            String ipaddr_SN = heartbeatMsg.getIpaddress(); //ip address from SN heartbeat
+            int port_SN = heartbeatMsg.getPort(); //port number from SN heartbeat
+            boolean exist = false;
+            for(StoreNodeInfo sni : fileChunks.get(fileName).get(chunkId).getReplicaLocationsList()){
+                String ipaddr_CT = sni.getIpaddress(); //ip address from controllers record
+                int port_CT = sni.getPort(); //port number from Controllers record
+                if(ipaddr_SN.equals(ipaddr_CT)&&port_SN==port_CT) {
+                    exist = true;
+                    System.out.println("heartbeat received:file chunk " + fileName + chunkId + "status ok");
+                }
+            }
+            if (!exist){
 
+            }
+        }
+    }
     private static void handleRetrieveFile(RetrieveRequestToController retrieveFileMsg) {
         try {
             String fileName = retrieveFileMsg.getFileName();
             System.out.println("Retrieving file: " + fileName);
             FileMetaData response;
-            if (files.containsKey(fileName) && files.get(fileName).getIsCompleted()) {
+            if (fileChunks.containsKey(fileName) && files.get(fileName).getIsCompleted()) {
                 // only allow to read when file is completed writing and not corrupted
-                response = files.get(fileName);
+                FileMetaData metadata = files.get(fileName);
+                long fileSize = metadata.getFileSize();
+                Set<ChunkMetaData> chunks = (Set<ChunkMetaData>) fileChunks.get(fileName).values();
+                response = FileMetaData.newBuilder()
+                        .setFileName(fileName)
+                        .setFileSize(fileSize)
+                        .setNumOfChunks(chunks.size())
+                        .addAllChunkList(chunks)
+                        .setIsCompleted(true)
+                        .build();
                 response.writeDelimitedTo(socket.getOutputStream());
                 System.out.println("returning file metadata for file: " + fileName);
             } else {
