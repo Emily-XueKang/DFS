@@ -20,20 +20,27 @@ import org.apache.commons.cli.*;
 
 public class StorageNode {
     public static int STORAGE_PORT = 8082;
+    public static int HEARTBEAT_PERIOD_MS = 5000;
+    public static String CONTROLLER_IP = "localhost";
     private static Options options = new Options();
 
     private ServerSocket srvSocket;
     private HashSet<String> localChunks = new HashSet<String>(); //string : filename + chunkid, for checking purpose
-    private ConcurrentLinkedQueue<SNchunkInfo> chunkInfos= new ConcurrentLinkedQueue<SNchunkInfo>(); //simple chunk info, updated and sent by backgroud thread for heartbeat message
+    private ConcurrentLinkedQueue<SimplechunkInfo> chunkInfos= new ConcurrentLinkedQueue<SimplechunkInfo>(); //simple chunk info, updated and sent by backgroud thread for heartbeat message
     public static void main(String[] args) {
         System.out.println("Starting storage node...");
         options.addOption("p", "port", true, "port to use");
+        options.addOption("c", "controller", true, "controller node ip");
+
         CommandLineParser parser = new BasicParser();
         CommandLine cmd = null;
         try {
             cmd = parser.parse(options, args);
             if (cmd.hasOption("p")) {
                 STORAGE_PORT = Integer.parseInt(cmd.getOptionValue("p"));
+            }
+            if (cmd.hasOption("c")) {
+                CONTROLLER_IP = cmd.getOptionValue("c");
             }
         } catch (Exception e) {
             System.out.println("can't parse command line argument");
@@ -54,7 +61,7 @@ public class StorageNode {
                 File pathfile = new File("/"); //unix/linux
                 //File pathfile = new File("c:"); //windows
                 long freespace = pathfile.getUsableSpace();
-                ArrayList<SNchunkInfo> ci = new ArrayList<>();
+                ArrayList<SimplechunkInfo> ci = new ArrayList<>();
                 while(!chunkInfos.isEmpty()){
                     ci.add(chunkInfos.poll());
                 } //empty chunkInfos queue, ensure every time we only send the changes in SN
@@ -65,15 +72,18 @@ public class StorageNode {
                             .setIpaddress(getHostname()) //may throw UnknownHostException
                             .setPort(getHostPort())
                             .build();
-                    Socket controllerSock = new Socket("localhost", Controller.CONTROLLER_PORT);
-                    heartBeat.writeDelimitedTo(controllerSock.getOutputStream());
+                    ControllerMessageWrapper msgWrapper = ControllerMessageWrapper.newBuilder()
+                            .setHeartbeatMsg(heartBeat)
+                            .build();
+                    Socket controllerSock = new Socket(CONTROLLER_IP, Controller.CONTROLLER_PORT);
+                    msgWrapper.writeDelimitedTo(controllerSock.getOutputStream());
                     System.out.println("sent heartbeat...");
                 } catch (IOException e) {
                     System.out.println("failed to send update info through heartbeat");
                     e.printStackTrace();
                 }
                 try {
-                    Thread.sleep(5000);
+                    Thread.sleep(HEARTBEAT_PERIOD_MS);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -118,13 +128,24 @@ public class StorageNode {
 
         if (success) {
             System.out.println("Stored file name: " + storeChunkMsg.getFileName() + "chunk Id: " + chunkId + " successfully");
-            // after write to local sync with controller node
+            //update chunkInfos after store
+            SimplechunkInfo ci = SimplechunkInfo.newBuilder()
+                    .setChunkId(chunkId)
+                    .setFileName(fileName)
+                    .build();
+            chunkInfos.offer(ci);
+
             try {
+                // after write to local sync with controller node -- debrecated
+                /* do not update replica for each storage, instead, us the chunkinfo queue to keep track of updates and sent
+                via heartbeat msg
                 Socket controllerSock = new Socket("localhost", Controller.CONTROLLER_PORT);
                 StoreNodeInfo nodeInfo = StoreNodeInfo.newBuilder()
                         .setIpaddress(getHostname())
                         .setPort(getHostPort())
                         .build();
+
+
                 UpdateChunkReplicaToController updateReq = UpdateChunkReplicaToController.newBuilder()
                         .setChunkId(chunkId)
                         .setFileName(fileName)
@@ -141,7 +162,7 @@ public class StorageNode {
                     return false;
                 }
                 System.out.println("Succeed to sync replica write success with Controller Node");
-
+                */
                 //the pipeline replication process
                 List<StoreNodeInfo> nodeList = storeChunkMsg.getReplicaToStoreList();
                 if (nodeList != null && !nodeList.isEmpty()) {
@@ -176,6 +197,11 @@ public class StorageNode {
             }
         }
         return false;
+    }
+    //TODO: replica recovery method
+    public boolean recoverReplica(recoverReplica rrmsg){
+
+        return true;
     }
     public byte[] genChecksum(ByteString data){
         byte[] databyte = new byte[Client.CHUNK_SIZE];
@@ -238,6 +264,7 @@ public class StorageNode {
             fschecksum.read(checksum_from_disk);
             if(!Arrays.equals(checksum_from_disk,checksum_generated)){
                 System.out.println("checksum failed, invalid file chunk");
+                //
                 return null;
             }
         } catch (IOException e) {

@@ -1,35 +1,32 @@
 package edu.usfca.cs.dfs;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-
 import edu.usfca.cs.dfs.StorageMessages.*;
 
 public class Controller {
     final public static int CONTROLLER_PORT = 8081;
+    final public static long NODE_INACTIVE_THRESHOLD_MS = 10000;
 
-    private static ArrayList<StoreNodeInfo> activeNodes = new ArrayList<StoreNodeInfo>();
+    private static List<StoreNodeInfo> activeNodes = Collections.synchronizedList(new ArrayList<StoreNodeInfo>());
+    private static ConcurrentHashMap<StoreNodeInfo, Long> activeNodesTsMap = new ConcurrentHashMap<>();
+    private static ConcurrentHashMap<StoreNodeInfo, Set<SimplechunkInfo>> SNToChunkMap = new ConcurrentHashMap<>();
     private static ConcurrentHashMap<String, FileMetaData> files = new ConcurrentHashMap<>();
     private static ConcurrentHashMap<String, ConcurrentHashMap<Integer, ChunkMetaData>> fileChunks =
-            new ConcurrentHashMap<String, ConcurrentHashMap<Integer, ChunkMetaData>>(); //map filename to a map of chunkid--chunkmetadata
+            new ConcurrentHashMap<>();    //map filename to a map of chunkid--chunkmetadata
+
     private static Random rand = new Random();
     private static Socket socket;
+
     public static void main(String[] args) {
         System.out.println("Starting controller on port " + CONTROLLER_PORT + "...");
+        Thread scanner = new Thread(new Scanner());
+        scanner.start();
         // TODO: Load data structures to memory, active nodes discovery
-        StoreNodeInfo testNode = StoreNodeInfo.newBuilder()
-                .setIpaddress("localhost")
-                .setPort(8082)
-                .build();
-        activeNodes.add(testNode);
-        testNode = StoreNodeInfo.newBuilder()
-                .setIpaddress("localhost")
-                .setPort(8083)
-                .build();
-        activeNodes.add(testNode);
         ServerSocket serversock = null;
         try {
             serversock = new ServerSocket(CONTROLLER_PORT);
@@ -47,9 +44,9 @@ public class Controller {
                     handleStoreFile(msgWrapper.getStoreFileMsg());
                 } else if (msgWrapper.hasRetrieveFileMsg()) {
                     handleRetrieveFile(msgWrapper.getRetrieveFileMsg());
-                } else if (msgWrapper.hasUpdateReplicaMsg()) {
-                    handleUpdateChunkReplica(msgWrapper.getUpdateReplicaMsg());
-                } else if (msgWrapper.hasHeartbeatMsg()){
+//                } else if (msgWrapper.hasUpdateReplicaMsg()) {
+//                    handleUpdateChunkReplica(msgWrapper.getUpdateReplicaMsg());
+                } else if(msgWrapper.hasHeartbeatMsg()){
                     handleHeartBeat(msgWrapper.getHeartbeatMsg());
                 }
             } catch (IOException e) {
@@ -57,29 +54,94 @@ public class Controller {
             }
         }
     }
-    private static void handleHeartBeat(SNHeartBeat heartbeatMsg){
-        ArrayList<SNchunkInfo> ci = (ArrayList<SNchunkInfo>) heartbeatMsg.getChunksList();
-        String fileName;
-        int chunkId;
-        for(SNchunkInfo i : ci){
-            fileName = i.getFileName();
-            chunkId = i.getChunkId();
-            String ipaddr_SN = heartbeatMsg.getIpaddress(); //ip address from SN heartbeat
-            int port_SN = heartbeatMsg.getPort(); //port number from SN heartbeat
-            boolean exist = false;
-            for(StoreNodeInfo sni : fileChunks.get(fileName).get(chunkId).getReplicaLocationsList()){
-                String ipaddr_CT = sni.getIpaddress(); //ip address from controllers record
-                int port_CT = sni.getPort(); //port number from Controllers record
-                if(ipaddr_SN.equals(ipaddr_CT)&&port_SN==port_CT) {
-                    exist = true;
-                    System.out.println("heartbeat received:file chunk " + fileName + chunkId + "status ok");
-                }
-            }
-            if (!exist){
 
+    //inner class for a seperate thread in controller to scan active sn list
+    public static class Scanner implements Runnable {
+        //update active node list when one node fails, delete the failed node
+        @Override
+        public void run(){
+            //need to scan all data in SN and get the change
+            System.out.println("background scanning thread started");
+            while(true) {
+                for (Map.Entry<StoreNodeInfo, Long> entry : activeNodesTsMap.entrySet()) {
+                    if (System.currentTimeMillis() - entry.getValue() > NODE_INACTIVE_THRESHOLD_MS) {
+                        // mark the storage as inactive
+                        StoreNodeInfo inactiveNode = entry.getKey();
+                        activeNodes.remove(inactiveNode);
+                        activeNodesTsMap.remove(inactiveNode);
+                        System.out.println("inactive node detected at ip " + inactiveNode.getIpaddress() + " port " + inactiveNode.getPort());
+                        // TODO: replicate the chunks that this inactive node maintains
+                    }
+                }
+                try {
+                    Thread.sleep(NODE_INACTIVE_THRESHOLD_MS);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
         }
     }
+
+    private static void handleHeartBeat(SNHeartBeat heartbeatMsg){
+        List<SimplechunkInfo> snci = heartbeatMsg.getChunksList();
+        StoreNodeInfo currentNode = StoreNodeInfo.newBuilder()
+                .setIpaddress(heartbeatMsg.getIpaddress())
+                .setPort(heartbeatMsg.getPort())
+                .build();
+        if (!activeNodesTsMap.containsKey(currentNode)) {
+            activeNodes.add(currentNode); // new node discovered
+            System.out.println("new active node detected at ip: " + currentNode.getIpaddress() + " port: " + currentNode.getPort());
+        }
+        // update the latest active timestamp to the storage node
+        activeNodesTsMap.put(currentNode, System.currentTimeMillis());
+
+        HashSet<SimplechunkInfo> newChunkSet = new HashSet<SimplechunkInfo>(snci);
+        if (!SNToChunkMap.containsKey(currentNode)) {
+            SNToChunkMap.put(currentNode, newChunkSet);
+        } else {
+            // merge the newly added chunks with existing chunks
+            SNToChunkMap.get(currentNode).addAll(newChunkSet);
+        }
+
+        //update filechunks metadata with heartbeat msg
+        for(SimplechunkInfo i : snci){
+            String fileName = i.getFileName();
+            int chunkId = i.getChunkId();
+            String ipaddr_SN = heartbeatMsg.getIpaddress(); //ip address from SN heartbeat
+            int port_SN = heartbeatMsg.getPort(); //port number from SN heartbeat
+
+            StoreNodeInfo snInfo = StoreNodeInfo.newBuilder()
+                    .setIpaddress(ipaddr_SN)
+                    .setPort(port_SN)
+                    .build();
+            if (!fileChunks.containsKey(fileName)) {
+                fileChunks.put(fileName, new ConcurrentHashMap<>());
+            }
+            ConcurrentHashMap<Integer, ChunkMetaData> chunkMap = fileChunks.get(fileName);
+            ChunkMetaData chunkMetadata;
+            if (!chunkMap.containsKey(chunkId)) {
+                chunkMetadata = ChunkMetaData.newBuilder()
+                        .setChunkId(chunkId)
+                        .setFileName(fileName)
+                        .addReplicaLocations(snInfo)
+                        .build();
+            } else {
+                chunkMetadata = chunkMap.get(chunkId);
+                chunkMetadata.toBuilder()
+                        .addReplicaLocations(snInfo)
+                        .build();
+            }
+            chunkMap.put(chunkId, chunkMetadata);
+            if (files.get(fileName).getNumOfChunks() == chunkMap.size()) {
+                FileMetaData fileMetadata = files.get(fileName).toBuilder()
+                        .setIsCompleted(true)
+                        .build();
+                files.put(fileName, fileMetadata);
+            }
+            fileChunks.put(fileName, chunkMap);
+        }
+    }
+
     private static void handleRetrieveFile(RetrieveRequestToController retrieveFileMsg) {
         try {
             String fileName = retrieveFileMsg.getFileName();
@@ -165,6 +227,7 @@ public class Controller {
         }
     }
 
+    /* deprecated
     private static void handleUpdateChunkReplica(UpdateChunkReplicaToController updateReplicaMsg) {
         String fileName = updateReplicaMsg.getFileName();
         int chunkId = updateReplicaMsg.getChunkId();
@@ -208,4 +271,5 @@ public class Controller {
         }
 
     }
+    */
 }
