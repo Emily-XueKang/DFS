@@ -58,7 +58,7 @@ public class StorageNode {
             //need to scan all data in SN and get the change
             System.out.println("backgroud");
             while(true){
-                File pathfile = new File("/"); //unix/linux
+                File pathfile = new File("/home2/xkang3"); //unix/linux
                 //File pathfile = new File("c:"); //windows
                 long freespace = pathfile.getUsableSpace();
                 ArrayList<SimplechunkInfo> ci = new ArrayList<>();

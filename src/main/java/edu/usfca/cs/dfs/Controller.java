@@ -77,6 +77,7 @@ public class Controller {
                         for(SimplechunkInfo sci:inactiveNodeChunks){
                             String filename = sci.getFileName();
                             int chunkid = sci.getChunkId();
+                            System.out.println("inactive node file-chunk: " + filename + "-" +chunkid);
                             //2.in fileChunks map, for each chunk that need to be replicated, find its backup nodes
                             Iterator it = fileChunks.entrySet().iterator();
                             while (it.hasNext()) {
