@@ -92,10 +92,14 @@ message SimplechunkInfo {
     int32 chunkId = 2;
 }
 
-message recoverReplica {
-    string filename = 1;
-    int32 chunkId = 2;
-    StoreNodeInfo source = 3;
+message recoverReplicaCmdFromController {
+    StoreNodeInfo target = 1;
+    StoreNodeInfo source = 2;
+    SimplechunkInfo replica = 3;
+}
+
+message recoverReplicaRspFromSN {
+    bool replicaSent = 1;
 }
 
 

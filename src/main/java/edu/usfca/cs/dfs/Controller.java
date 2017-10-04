@@ -71,6 +71,50 @@ public class Controller {
                         activeNodesTsMap.remove(inactiveNode);
                         System.out.println("inactive node detected at ip " + inactiveNode.getIpaddress() + " port " + inactiveNode.getPort());
                         // TODO: replicate the chunks that this inactive node maintains
+
+                        //1.iterate through all chunks in this dead node
+                        Set<SimplechunkInfo> inactiveNodeChunks = SNToChunkMap.get(inactiveNode);
+                        for(SimplechunkInfo sci:inactiveNodeChunks){
+                            String filename = sci.getFileName();
+                            int chunkid = sci.getChunkId();
+                            //2.in fileChunks map, for each chunk that need to be replicated, find its backup nodes
+                            Iterator it = fileChunks.entrySet().iterator();
+                            while (it.hasNext()) {
+                                Map.Entry pair = (Map.Entry)it.next();
+                                if((pair.getKey()).equals(filename)){
+                                    ConcurrentHashMap<Integer, ChunkMetaData> chunks = (ConcurrentHashMap<Integer, ChunkMetaData>) pair.getValue();
+                                    for(int cid : chunks.keySet()){
+                                        if(cid == chunkid){
+                                            ChunkMetaData cmd = chunks.get(cid);
+                                            List<StoreNodeInfo> c_nodes = cmd.getReplicaLocationsList();
+                                            for(StoreNodeInfo sni:c_nodes){
+                                                //3.remove the inactive node in this chunks node list
+                                                if(sni == inactiveNode){
+                                                    cmd.getReplicaLocationsList().remove(sni);
+                                                }
+                                            }
+                                            StoreNodeInfo source = c_nodes.get(rand.nextInt(c_nodes.size()));
+                                            StoreNodeInfo target = activeNodes.get(rand.nextInt(activeNodes.size()));
+                                            //4.build recover replica message
+                                            recoverReplicaCmdFromController rrmsg = recoverReplicaCmdFromController.newBuilder()
+                                                    .setTarget(target)
+                                                    .setSource(source)
+                                                    .setReplica(sci)
+                                                    .build();
+                                            //send to SN by sn socket, empty bad node chunk set after getting response
+
+
+                                            System.out.println("filename=" + pair.getKey() + "; chunkId=" + pair.getValue() + " need recover replica");
+
+                                        }
+                                    }
+                                }
+
+                                it.remove(); // avoids a ConcurrentModificationException
+                            }
+                        }
+                        //StoreNodeInfo source =
+
                     }
                 }
                 try {

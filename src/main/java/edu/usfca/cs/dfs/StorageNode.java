@@ -200,6 +200,7 @@ public class StorageNode {
     }
     //TODO: replica recovery method
     public boolean recoverReplica(recoverReplica rrmsg){
+        StoreNodeInfo target = rrmsg.getTarget();
 
         return true;
     }
