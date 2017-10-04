@@ -86,7 +86,7 @@ public class Controller {
                                     for(int cid : chunks.keySet()){
                                         if(cid == chunkid){
                                             ChunkMetaData cmd = chunks.get(cid);
-                                            List<StoreNodeInfo> c_nodes = cmd.getReplicaLocationsList();
+                                            List<StoreNodeInfo> c_nodes = cmd.getReplicaLocationsList(); //nodes hold one of the chunks of this inactive node
                                             for(StoreNodeInfo sni:c_nodes){
                                                 //3.remove the inactive node in this chunks node list
                                                 if(sni == inactiveNode){
@@ -102,18 +102,26 @@ public class Controller {
                                                     .setReplica(sci)
                                                     .build();
                                             //send to SN by sn socket, empty bad node chunk set after getting response
-
-
-                                            System.out.println("filename=" + pair.getKey() + "; chunkId=" + pair.getValue() + " need recover replica");
-
+                                            try {
+                                                Socket snSocket = new Socket(source.getIpaddress(),source.getPort());
+                                                rrmsg.writeDelimitedTo(snSocket.getOutputStream());
+                                                recoverReplicaRspFromSN
+                                                        res = recoverReplicaRspFromSN.parseDelimitedFrom(snSocket.getInputStream());
+                                                if(!res.getReplicaSuccess()){
+                                                    System.out.println("Failed to recover replica.");
+                                                }
+                                                System.out.println("recover replica for file "+filename+"'s chunk "+chunkid);
+                                                //after recovery, empty the chunk set of the dead node in SNTochunksMap
+                                                SNToChunkMap.get(inactiveNode).clear();
+                                            } catch (IOException e) {
+                                                e.printStackTrace();
+                                            }
                                         }
                                     }
                                 }
-
                                 it.remove(); // avoids a ConcurrentModificationException
                             }
                         }
-                        //StoreNodeInfo source =
 
                     }
                 }

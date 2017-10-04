@@ -198,10 +198,35 @@ public class StorageNode {
         }
         return false;
     }
-    //TODO: replica recovery method
-    public boolean recoverReplica(recoverReplica rrmsg){
-        StoreNodeInfo target = rrmsg.getTarget();
+    //replica recovery method, to target node using pipeline
+    public boolean recoverReplica(recoverReplicaCmdFromController rrcmsg){
+        StoreNodeInfo target = rrcmsg.getTarget();
+        SimplechunkInfo sci = rrcmsg.getReplica();
+        ByteString replicaData = retrieveChunk(sci.getFileName(),sci.getChunkId());
 
+        try {
+            Socket storageSock = new Socket(target.getIpaddress(), target.getPort());
+            StoreChunk chunk = StoreChunk.newBuilder()
+                    .setFileName(sci.getFileName())
+                    .setChunkId(sci.getChunkId())
+                    .setData(replicaData)
+                    .addReplicaToStore(0,target)
+                    .build();
+            StorageMessageWrapper msgWrapper = StorageMessageWrapper.newBuilder()
+                    .setStoreChunkMsg(chunk)
+                    .build();
+            msgWrapper.writeDelimitedTo(storageSock.getOutputStream());
+            System.out.println("sent replica to recovery target SN");
+
+            //then, send replica recovery execution response to controller
+            Socket replysocket = srvSocket.accept();
+            recoverReplicaRspFromSN response = recoverReplicaRspFromSN.newBuilder()
+                    .setReplicaSuccess(true)
+                    .build();
+            response.writeDelimitedTo(replysocket.getOutputStream());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         return true;
     }
     public byte[] genChecksum(ByteString data){

@@ -99,7 +99,7 @@ message recoverReplicaCmdFromController {
 }
 
 message recoverReplicaRspFromSN {
-    bool replicaSent = 1;
+    bool replicaSuccess = 1;
 }
 
 
