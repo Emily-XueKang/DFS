@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import edu.usfca.cs.dfs.StorageMessages.*;
 
 public class Controller {
-    final public static int CONTROLLER_PORT = 8081;
+    final public static int CONTROLLER_PORT = 25000;
     final public static long NODE_INACTIVE_THRESHOLD_MS = 10000;
 
     private static List<StoreNodeInfo> activeNodes = Collections.synchronizedList(new ArrayList<StoreNodeInfo>());

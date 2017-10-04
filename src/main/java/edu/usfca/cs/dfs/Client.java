@@ -8,7 +8,9 @@ import com.google.protobuf.ByteString;
 
 
 public class Client {
-    final public static int CHUNK_SIZE = 2 * 1024 * 1024;
+    final public static int CHUNK_SIZE = 1024 * 1024;
+    public static String CONTROLLER_IP = "bass01";
+
 
     public static void main(String[] args)
     throws Exception{
@@ -20,7 +22,7 @@ public class Client {
     public boolean writeFile(String fileName) {
         boolean success = true;
         try {
-            Socket controllerSock = new Socket("localhost", Controller.CONTROLLER_PORT);
+            Socket controllerSock = new Socket(CONTROLLER_IP, Controller.CONTROLLER_PORT);
 
             long fileSizeInBytes = new File(fileName).length();
             List<StoreChunk> chunkList = splitFile(fileName);

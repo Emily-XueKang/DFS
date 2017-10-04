@@ -1,7 +1,6 @@
 package edu.usfca.cs.dfs;
 
 import java.io.*;
-import java.lang.reflect.Array;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -19,9 +18,9 @@ import org.apache.commons.cli.*;
 
 
 public class StorageNode {
-    public static int STORAGE_PORT = 8082;
+    public static int STORAGE_PORT = 25001;
     public static int HEARTBEAT_PERIOD_MS = 5000;
-    public static String CONTROLLER_IP = "localhost";
+    public static String CONTROLLER_IP = "bass01";
     private static Options options = new Options();
 
     private ServerSocket srvSocket;
