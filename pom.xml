@@ -30,7 +30,7 @@
     </developers>
 
     <properties>
-        <jdk.version>1.8</jdk.version>
+        <jdk.version>1.7</jdk.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
@@ -45,7 +45,6 @@
                     <target>${jdk.version}</target>
 
                     <compilerArgument>-Xlint:all</compilerArgument>
-                    <compilerArgument>-Xpkginfo:always</compilerArgument>
                     <showDeprecation>true</showDeprecation>
                     <showWarnings>true</showWarnings>
                 </configuration>

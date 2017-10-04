@@ -18,7 +18,7 @@ import org.apache.commons.cli.*;
 
 
 public class StorageNode {
-    public static int STORAGE_PORT = 25001;
+    public static int STORAGE_PORT = 25101;
     public static int HEARTBEAT_PERIOD_MS = 5000;
     public static String CONTROLLER_IP = "bass01";
     private static Options options = new Options();

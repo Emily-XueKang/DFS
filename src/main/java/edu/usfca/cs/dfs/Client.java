@@ -15,8 +15,8 @@ public class Client {
     public static void main(String[] args)
     throws Exception{
         Client c = new Client();
-        c.writeFile("test");
-        c.retrieveFile("test");
+        c.writeFile("/home2/xkang3/testfile.JPG");
+        c.retrieveFile("/home2/xkang3/testfile.JPG");
     }
 
     public boolean writeFile(String fileName) {
