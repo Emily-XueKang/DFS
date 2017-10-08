@@ -110,6 +110,13 @@ public class StorageNode {
                             .setData(data)
                             .build();
                     resp.writeDelimitedTo(socket.getOutputStream());
+                } else if (msgWrapper.hasRecoverReplicaCmd()) {
+                    recoverReplicaCmdFromController recoverCommand = msgWrapper.getRecoverReplicaCmd();
+                    boolean success = recoverReplica(recoverCommand);
+                    recoverReplicaRspFromSN recoverResponse = recoverReplicaRspFromSN.newBuilder()
+                            .setReplicaSuccess(success)
+                            .build();
+                    recoverResponse.writeDelimitedTo(socket.getOutputStream());
                 }
             }
         } catch (Exception e) {
@@ -221,10 +228,12 @@ public class StorageNode {
                     .setReplicaSuccess(true)
                     .build();
             response.writeDelimitedTo(replysocket.getOutputStream());
-        } catch (IOException e) {
+            storageSock.close();
+            return true;
+            } catch (IOException e) {
             e.printStackTrace();
         }
-        return true;
+        return false;
     }
 
     public byte[] genChecksum(ByteString data){

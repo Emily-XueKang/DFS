@@ -25,6 +25,7 @@ message StorageMessageWrapper {
     oneof msg {
         StoreChunk storeChunkMsg = 1;
         RetrieveRequestToStorage retrieveChunkMsg = 2;
+        recoverReplicaCmdFromController recoverReplicaCmd = 3;
     }
 }
 
