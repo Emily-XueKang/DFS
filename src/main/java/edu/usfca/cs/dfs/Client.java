@@ -3,6 +3,8 @@ import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+
 import edu.usfca.cs.dfs.StorageMessages.*;
 import com.google.protobuf.ByteString;
 
@@ -16,19 +18,22 @@ public class Client {
     throws Exception{
         Client c = new Client();
         c.writeFile("/home2/xkang3/testfile.JPG");
+        TimeUnit.SECONDS.sleep(10);
         c.retrieveFile("/home2/xkang3/testfile.JPG");
     }
 
     public boolean writeFile(String fileName) {
         boolean success = true;
         try {
-            Socket controllerSock = new Socket(CONTROLLER_IP, Controller.CONTROLLER_PORT);
 
             long fileSizeInBytes = new File(fileName).length();
             List<StoreChunk> chunkList = splitFile(fileName);
-            for (StoreChunk sc : chunkList) {
+            for (int chunkind = 0;chunkind<chunkList.size();chunkind++) {
+                StoreChunk sc = chunkList.get(chunkind);
                 //for every chunk in this file, send request to controller,
                 // then controller will send back a list of nodes for replica of this chunk
+                Socket controllerSock = new Socket(CONTROLLER_IP, Controller.CONTROLLER_PORT);
+
                 StoreRequestToController srtc = StoreRequestToController.newBuilder()
                         .setFileName(sc.getFileName())
                         .setChunkId(sc.getChunkId())
@@ -39,8 +44,9 @@ public class Client {
                         .setStoreFileMsg(srtc)
                         .build();
                 ControllerMsgWrapper.writeDelimitedTo(controllerSock.getOutputStream());
+                System.out.println("sent request to controller..");
                 StoreResponseFromController srfc = StoreResponseFromController.parseDelimitedFrom(controllerSock.getInputStream());
-
+                System.out.println("get response from controller..");
                 List<StoreNodeInfo> nodeList = srfc.getInfoList();
                 if (nodeList.isEmpty()) {
                     throw new Exception("no available nodes to store file: " + fileName);
@@ -71,8 +77,8 @@ public class Client {
                 System.out.println("store chunk success: " + success);
 
                 storageSock.close();
+                controllerSock.close();
             }
-            controllerSock.close();
         } catch (Exception e) {
             e.printStackTrace();
             success = false;
@@ -115,7 +121,7 @@ public class Client {
     private boolean retrieveFile(String fileName) {
         FileMetaData fileMetadata;
         try {
-            Socket controllerSock = new Socket("localhost", Controller.CONTROLLER_PORT);
+            Socket controllerSock = new Socket("bass01", Controller.CONTROLLER_PORT);
             RetrieveRequestToController rrtc = RetrieveRequestToController.newBuilder()
                     .setFileName(fileName)
                     .build();
@@ -124,6 +130,7 @@ public class Client {
                     .build();
             request.writeDelimitedTo(controllerSock.getOutputStream());
             fileMetadata = FileMetaData.parseDelimitedFrom(controllerSock.getInputStream());
+            controllerSock.close();
 
         } catch (IOException e) {
             System.out.println("fail to query controller Node for fileMetaData ");

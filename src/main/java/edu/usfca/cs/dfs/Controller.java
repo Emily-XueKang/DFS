@@ -123,7 +123,6 @@ public class Controller {
                                 it.remove(); // avoids a ConcurrentModificationException
                             }
                         }
-
                     }
                 }
                 try {
@@ -168,7 +167,7 @@ public class Controller {
                     .setPort(port_SN)
                     .build();
             if (!fileChunks.containsKey(fileName)) {
-                fileChunks.put(fileName, new ConcurrentHashMap<>());
+                fileChunks.put(fileName, new ConcurrentHashMap<Integer, ChunkMetaData>());
             }
             ConcurrentHashMap<Integer, ChunkMetaData> chunkMap = fileChunks.get(fileName);
             ChunkMetaData chunkMetadata;
@@ -204,7 +203,7 @@ public class Controller {
                 // only allow to read when file is completed writing and not corrupted
                 FileMetaData metadata = files.get(fileName);
                 long fileSize = metadata.getFileSize();
-                Set<ChunkMetaData> chunks = (Set<ChunkMetaData>) fileChunks.get(fileName).values();
+                Collection<ChunkMetaData> chunks = fileChunks.get(fileName).values();
                 response = FileMetaData.newBuilder()
                         .setFileName(fileName)
                         .setFileSize(fileSize)

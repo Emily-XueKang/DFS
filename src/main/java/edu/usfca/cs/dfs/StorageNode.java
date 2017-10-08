@@ -1,5 +1,4 @@
 package edu.usfca.cs.dfs;
-
 import java.io.*;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -12,7 +11,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
-
 import com.google.protobuf.ByteString;
 import org.apache.commons.cli.*;
 
@@ -121,12 +119,12 @@ public class StorageNode {
 
     private boolean storeChunk(StoreChunk storeChunkMsg) {
         int chunkId = storeChunkMsg.getChunkId();
-        System.out.println("Storing file name: " + storeChunkMsg.getFileName() + "chunk Id: " + chunkId);
+        System.out.println("Storing file name: " + storeChunkMsg.getFileName() + ", chunk Id: " + chunkId);
         String fileName = storeChunkMsg.getFileName();
         boolean success = storeChunkLocal(fileName, chunkId, storeChunkMsg.getData());
 
         if (success) {
-            System.out.println("Stored file name: " + storeChunkMsg.getFileName() + "chunk Id: " + chunkId + " successfully");
+            System.out.println("Stored file name: " + storeChunkMsg.getFileName() + ", chunk Id: " + chunkId + " successfully");
             //update chunkInfos after store
             SimplechunkInfo ci = SimplechunkInfo.newBuilder()
                     .setChunkId(chunkId)
@@ -228,6 +226,7 @@ public class StorageNode {
         }
         return true;
     }
+
     public byte[] genChecksum(ByteString data){
         byte[] databyte = new byte[Client.CHUNK_SIZE];
         byte[] MD5data = new byte[16]; //MD5 HASH size = 128 bits
@@ -289,7 +288,6 @@ public class StorageNode {
             fschecksum.read(checksum_from_disk);
             if(!Arrays.equals(checksum_from_disk,checksum_generated)){
                 System.out.println("checksum failed, invalid file chunk");
-                //
                 return null;
             }
         } catch (IOException e) {
@@ -313,7 +311,4 @@ public class StorageNode {
         // TODO: make port number const
         return STORAGE_PORT;
     }
-
-
-
 }

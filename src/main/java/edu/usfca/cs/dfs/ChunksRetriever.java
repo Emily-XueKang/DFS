@@ -115,7 +115,6 @@ public class ChunksRetriever {
 
         @Override
         public void run() {
-//            FileOutputStream fs = null;
             String chunkFileName = fileName + "_" + chunkId;
 
             try {
@@ -132,8 +131,6 @@ public class ChunksRetriever {
                         RetrieveResponseFromStorage.parseDelimitedFrom(storageSock.getInputStream());
 
                 ByteString data = resp.getData();
-//                fs = new FileOutputStream(chunkFileName);
-//                data.writeTo(fs);
                 dataMap.put(chunkId, data); //retrieve to client memory, then combine from memory to disk
                 System.out.println("Retrieved chunk: " + chunkFileName);
             } catch (IOException e) {
@@ -142,9 +139,7 @@ public class ChunksRetriever {
             }
             finally {
                 decrementTasks(); // done with this task
-//                try {fs.close();} catch (Exception ex) {/*ignore*/}
             }
-
         }
     }
 }
