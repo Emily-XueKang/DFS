@@ -81,6 +81,7 @@ public class Controller {
                             //2.in fileChunks map, for each chunk that need to be replicated, find its backup nodes
                             Iterator it = fileChunks.entrySet().iterator();
                             while (it.hasNext()) {
+                                System.out.println("iterate through fileChunks:");
                                 Map.Entry pair = (Map.Entry)it.next();
                                 if((pair.getKey()).equals(filename)){
                                     ConcurrentHashMap<Integer, ChunkMetaData> chunks = (ConcurrentHashMap<Integer, ChunkMetaData>) pair.getValue();
@@ -96,6 +97,8 @@ public class Controller {
                                             }
                                             StoreNodeInfo source = c_nodes.get(rand.nextInt(c_nodes.size()));
                                             StoreNodeInfo target = activeNodes.get(rand.nextInt(activeNodes.size()));
+                                            System.out.println("source node for replica recovery: ip="+source.getIpaddress()+"port="+source.getPort());
+                                            System.out.println("target node for replica recovery: ip="+target.getIpaddress()+"port="+target.getPort());
                                             //4.build recover replica message
                                             recoverReplicaCmdFromController rrmsg = recoverReplicaCmdFromController.newBuilder()
                                                     .setTarget(target)
