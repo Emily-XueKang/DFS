@@ -82,7 +82,7 @@ public class Controller {
                             //2.in fileChunks map, for each chunk that need to be replicated, find its backup nodes
                             ChunkMetaData oldChunkMetadata = fileChunks.get(filename).get(chunkid);
                             List<StoreNodeInfo> old_c_nodes = oldChunkMetadata.getReplicaLocationsList();
-                            List<StoreNodeInfo> c_nodes = new ArrayList<StoreNodeInfo>(old_c_nodes);
+                            List<StoreNodeInfo> c_nodes = new ArrayList<StoreNodeInfo>();
                             // remove the inactive node from filechunks map
                             //TODO: remove would fail, cannot use remove, so use for loop to copy all active nodes to a new c_nodes list
                             for(StoreNodeInfo ocn : old_c_nodes){
