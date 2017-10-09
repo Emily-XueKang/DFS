@@ -81,12 +81,19 @@ public class Controller {
                             System.out.println("inactive node file-chunk: " + filename + "-" +chunkid);
                             //2.in fileChunks map, for each chunk that need to be replicated, find its backup nodes
                             ChunkMetaData oldChunkMetadata = fileChunks.get(filename).get(chunkid);
-                            List<StoreNodeInfo> c_nodes = oldChunkMetadata.getReplicaLocationsList();
+                            List<StoreNodeInfo> old_c_nodes = oldChunkMetadata.getReplicaLocationsList();
+                            List<StoreNodeInfo> c_nodes = new ArrayList<StoreNodeInfo>(old_c_nodes);
                             // remove the inactive node from filechunks map
-                            boolean success = c_nodes.remove(inactiveNode);
-                            if (!success) {
-                                System.out.println("failed removing inactive node from the filechunks");
+                            //TODO: remove would fail, cannot use remove, so use for loop to copy all active nodes to a new c_nodes list
+                            for(StoreNodeInfo ocn : old_c_nodes){
+                                if(!ocn.equals(inactiveNode)){
+                                    c_nodes.add(ocn);
+                                }
                             }
+//                            boolean success = c_nodes.remove(inactiveNode);
+//                            if (!success) {
+//                                System.out.println("failed removing inactive node from the filechunks");
+//                            }
                             //get the source from updated c_nodes list
                             StoreNodeInfo source = c_nodes.get(rand.nextInt(c_nodes.size()));
                             // update the chunkMetadata in filechunks
