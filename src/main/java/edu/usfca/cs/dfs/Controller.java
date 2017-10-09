@@ -2,10 +2,13 @@ package edu.usfca.cs.dfs;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+
+import com.sun.tools.doclets.formats.html.SourceToHTMLConverter;
 import edu.usfca.cs.dfs.StorageMessages.*;
 
 public class Controller {
@@ -79,54 +82,56 @@ public class Controller {
                             int chunkid = sci.getChunkId();
                             System.out.println("inactive node file-chunk: " + filename + "-" +chunkid);
                             //2.in fileChunks map, for each chunk that need to be replicated, find its backup nodes
-                            Iterator it = fileChunks.entrySet().iterator();
-                            while (it.hasNext()) {
-                                System.out.println("iterate through fileChunks:");
-                                Map.Entry pair = (Map.Entry)it.next();
-                                if((pair.getKey()).equals(filename)){
-                                    ConcurrentHashMap<Integer, ChunkMetaData> chunks = (ConcurrentHashMap<Integer, ChunkMetaData>) pair.getValue();
-                                    for(int cid : chunks.keySet()){
-                                        if(cid == chunkid){
-                                            ChunkMetaData cmd = chunks.get(cid);
-                                            List<StoreNodeInfo> c_nodes = cmd.getReplicaLocationsList(); //nodes hold one of the chunks of this inactive node
-                                            for(StoreNodeInfo sni:c_nodes){
-                                                //3.remove the inactive node in this chunks node list
-                                                if(sni == inactiveNode){
-                                                    cmd.getReplicaLocationsList().remove(sni);
-                                                }
-                                            }
-                                            StoreNodeInfo source = c_nodes.get(rand.nextInt(c_nodes.size()));
-                                            StoreNodeInfo target = activeNodes.get(rand.nextInt(activeNodes.size()));
-                                            System.out.println("source node for replica recovery: ip="+source.getIpaddress()+"port="+source.getPort());
-                                            System.out.println("target node for replica recovery: ip="+target.getIpaddress()+"port="+target.getPort());
-                                            //4.build recover replica message
-                                            recoverReplicaCmdFromController rrmsg = recoverReplicaCmdFromController.newBuilder()
-                                                    .setTarget(target)
-                                                    .setSource(source)
-                                                    .setReplica(sci)
-                                                    .build();
-                                            StorageMessageWrapper msgWrapper = StorageMessageWrapper.newBuilder()
-                                                    .setRecoverReplicaCmd(rrmsg)
-                                                    .build();
-                                            //send to SN by sn socket, empty bad node chunk set after getting response
-                                            try {
-                                                Socket snSocket = new Socket(source.getIpaddress(),source.getPort());
-                                                msgWrapper.writeDelimitedTo(snSocket.getOutputStream());
-                                                recoverReplicaRspFromSN
-                                                        res = recoverReplicaRspFromSN.parseDelimitedFrom(snSocket.getInputStream());
-                                                if(!res.getReplicaSuccess()){
-                                                    System.out.println("Failed to recover replica.");
-                                                }
-                                                System.out.println("recover replica for file "+filename+"'s chunk "+chunkid);
-                                                //after recovery, empty the chunk set of the dead node in SNTochunksMap
-                                                SNToChunkMap.get(inactiveNode).clear();
-                                            } catch (IOException e) {
-                                                e.printStackTrace();
-                                            }
-                                        }
-                                    }
+                            ChunkMetaData oldChunkMetadata = fileChunks.get(filename).get(chunkid);
+                            List<StoreNodeInfo> c_nodes = oldChunkMetadata.getReplicaLocationsList();
+                            // remove the inactive node from filechunks map
+                            boolean success = c_nodes.remove(inactiveNode);
+                            if (!success) {
+                                System.out.println("failed removing inactive node from the filechunks");
+                            }
+                            //get the source from updated c_nodes list
+                            StoreNodeInfo source = c_nodes.get(rand.nextInt(c_nodes.size()));
+                            // update the chunkMetadata in filechunks
+                            ChunkMetaData newChunkMetadata = oldChunkMetadata.toBuilder()
+                                    .clearReplicaLocations()
+                                    .addAllReplicaLocations(c_nodes)
+                                    .build();
+                            fileChunks.get(filename).put(chunkid, newChunkMetadata);
+
+                            // need to exclude the active nodes that already containing this chunk when selecting target
+                            ArrayList<StoreNodeInfo> targetPoolPre = new ArrayList<StoreNodeInfo>(activeNodes);
+                            ArrayList<StoreNodeInfo> targetPoolAct = new ArrayList<StoreNodeInfo>();
+                            for(StoreNodeInfo targetCandidate : targetPoolPre){
+                                if(!c_nodes.contains(targetCandidate)){
+                                    targetPoolAct.add(targetCandidate);
                                 }
-                                it.remove(); // avoids a ConcurrentModificationException
+                            }
+                            StoreNodeInfo target = targetPoolAct.get(rand.nextInt(targetPoolAct.size()));
+                            System.out.println("source node for replica recovery: ip="+source.getIpaddress()+"port="+source.getPort());
+                            System.out.println("target node for replica recovery: ip="+target.getIpaddress()+"port="+target.getPort());
+                            //4.build recover replica message
+                            recoverReplicaCmdFromController rrmsg = recoverReplicaCmdFromController.newBuilder()
+                                    .setTarget(target)
+                                    .setSource(source)
+                                    .setReplica(sci)
+                                    .build();
+                            StorageMessageWrapper msgWrapper = StorageMessageWrapper.newBuilder()
+                                    .setRecoverReplicaCmd(rrmsg)
+                                    .build();
+                            //send to SN by sn socket, empty bad node chunk set after getting response
+                            try {
+                                Socket snSocket = new Socket(source.getIpaddress(),source.getPort());
+                                msgWrapper.writeDelimitedTo(snSocket.getOutputStream());
+                                recoverReplicaRspFromSN
+                                        res = recoverReplicaRspFromSN.parseDelimitedFrom(snSocket.getInputStream());
+                                if(!res.getReplicaSuccess()){
+                                    System.out.println("Failed to recover replica.");
+                                }
+                                System.out.println("recover replica for file "+filename+"'s chunk "+chunkid);
+                                //after recovery, empty the chunk set of the dead node in SNTochunksMap
+                                SNToChunkMap.get(inactiveNode).clear();
+                            } catch (IOException e) {
+                                e.printStackTrace();
                             }
                         }
                     }

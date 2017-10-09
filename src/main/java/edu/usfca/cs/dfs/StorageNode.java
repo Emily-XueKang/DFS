@@ -214,7 +214,6 @@ public class StorageNode {
                     .setFileName(sci.getFileName())
                     .setChunkId(sci.getChunkId())
                     .setData(replicaData)
-                    .addReplicaToStore(0,target)
                     .build();
             StorageMessageWrapper msgWrapper = StorageMessageWrapper.newBuilder()
                     .setStoreChunkMsg(chunk)
