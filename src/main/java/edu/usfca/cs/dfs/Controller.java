@@ -105,10 +105,13 @@ public class Controller {
                                                     .setSource(source)
                                                     .setReplica(sci)
                                                     .build();
+                                            StorageMessageWrapper msgWrapper = StorageMessageWrapper.newBuilder()
+                                                    .setRecoverReplicaCmd(rrmsg)
+                                                    .build();
                                             //send to SN by sn socket, empty bad node chunk set after getting response
                                             try {
                                                 Socket snSocket = new Socket(source.getIpaddress(),source.getPort());
-                                                rrmsg.writeDelimitedTo(snSocket.getOutputStream());
+                                                msgWrapper.writeDelimitedTo(snSocket.getOutputStream());
                                                 recoverReplicaRspFromSN
                                                         res = recoverReplicaRspFromSN.parseDelimitedFrom(snSocket.getInputStream());
                                                 if(!res.getReplicaSuccess()){
