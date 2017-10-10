@@ -170,7 +170,7 @@ public class Controller {
             SNToChunkMap.get(currentNode).addAll(newChunkSet);
         }
         if(newChunkSet.size()!=0){
-            System.out.println("in node "+heartbeatMsg.getIpaddress()+" add new chunks:");
+            System.out.println("In node "+heartbeatMsg.getIpaddress()+" add new chunks:");
             for(SimplechunkInfo c : newChunkSet){
                 System.out.println(c.getFileName() + "_" + c.getChunkId() + ";");
             }
@@ -204,9 +204,9 @@ public class Controller {
 
             chunkMap.put(chunkId, chunkMetadata);
             fileChunks.put(fileName, chunkMap);
-            System.out.println("update metadata in filechunks map: ");
-            System.out.println("===for filename="+fileName+",chunkid="+chunkId+
-                    " add storing node "+ipaddr_SN +" updated nodes size: " +
+            System.out.println("Update metadata in filechunks map: ");
+            System.out.println("For filename="+fileName+",chunkid="+chunkId+
+                    ", add storing node "+ipaddr_SN +" updated nodes size: " +
                     chunkMap.get(chunkId).getReplicaLocationsList().size());
             if (files.get(fileName).getNumOfChunks() == chunkMap.size()) {
                 FileMetaData fileMetadata = files.get(fileName).toBuilder()

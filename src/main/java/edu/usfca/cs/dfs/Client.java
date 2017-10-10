@@ -57,14 +57,14 @@ public class Client {
                 // write to first StoreNode and pass the remain of the list
                 System.out.println("get" + nodeList.size() + " nodes to store file: ");
                 for(StoreNodeInfo sn : nodeList){
-                    System.out.println(sn);
+                    System.out.print(sn);
                 }
                 StoreNodeInfo targetNode = nodeList.get(0);
                 List<StoreNodeInfo> remainNodes = new ArrayList<>(nodeList.size()-1);
                 for (int idx = 1; idx < nodeList.size(); idx++) {
                     remainNodes.add(nodeList.get(idx));
                 }
-                System.out.println("one node selected as first: " + targetNode);
+                System.out.print("one node selected as first: " + targetNode);
                 // setup a new socket to write to storageNode
                 Socket storageSock = new Socket(targetNode.getIpaddress(), targetNode.getPort());
                 StoreChunk chunk = StoreChunk.newBuilder()
