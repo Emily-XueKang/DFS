@@ -82,18 +82,15 @@ public class Controller {
                             //2.in fileChunks map, for each chunk that need to be replicated, find its backup nodes
                             ChunkMetaData oldChunkMetadata = fileChunks.get(filename).get(chunkid);
                             List<StoreNodeInfo> old_c_nodes = oldChunkMetadata.getReplicaLocationsList();
-                            List<StoreNodeInfo> c_nodes = new ArrayList<StoreNodeInfo>();
+                            List<StoreNodeInfo> c_nodes = new ArrayList<>();
                             // remove the inactive node from filechunks map
-                            //TODO: remove would fail, cannot use remove, so use for loop to copy all active nodes to a new c_nodes list
+                            //using .remove() method would fail, so use a for loop to copy all active nodes to a new c_nodes list
                             for(StoreNodeInfo ocn : old_c_nodes){
                                 if(!ocn.equals(inactiveNode)){
                                     c_nodes.add(ocn);
                                 }
                             }
-//                            boolean success = c_nodes.remove(inactiveNode);
-//                            if (!success) {
-//                                System.out.println("failed removing inactive node from the filechunks");
-//                            }
+                            //c_nodes is a list of node which contains this corrupted chunk in the inactive node
                             //get the source from updated c_nodes list
                             StoreNodeInfo source = c_nodes.get(rand.nextInt(c_nodes.size()));
                             // update the chunkMetadata in filechunks
@@ -104,14 +101,13 @@ public class Controller {
                             fileChunks.get(filename).put(chunkid, newChunkMetadata);
 
                             // need to exclude the active nodes that already containing this chunk when selecting target
-                            ArrayList<StoreNodeInfo> targetPoolPre = new ArrayList<StoreNodeInfo>(activeNodes);
-                            ArrayList<StoreNodeInfo> targetPoolAct = new ArrayList<StoreNodeInfo>();
-                            for(StoreNodeInfo targetCandidate : targetPoolPre){
+                            ArrayList<StoreNodeInfo> targetPool = new ArrayList<>();
+                            for(StoreNodeInfo targetCandidate : activeNodes){
                                 if(!c_nodes.contains(targetCandidate)){
-                                    targetPoolAct.add(targetCandidate);
+                                    targetPool.add(targetCandidate);
                                 }
                             }
-                            StoreNodeInfo target = targetPoolAct.get(rand.nextInt(targetPoolAct.size()));
+                            StoreNodeInfo target = targetPool.get(rand.nextInt(targetPool.size()));
                             System.out.println("source node for replica recovery: ip="+source.getIpaddress()+"port="+source.getPort());
                             System.out.println("target node for replica recovery: ip="+target.getIpaddress()+"port="+target.getPort());
                             //4.build recover replica message
@@ -127,6 +123,7 @@ public class Controller {
                             try {
                                 Socket snSocket = new Socket(source.getIpaddress(),source.getPort());
                                 msgWrapper.writeDelimitedTo(snSocket.getOutputStream());
+                                System.out.println("send recovery command to SN "+source.getIpaddress());
                                 recoverReplicaRspFromSN
                                         res = recoverReplicaRspFromSN.parseDelimitedFrom(snSocket.getInputStream());
                                 if(!res.getReplicaSuccess()){
@@ -170,6 +167,10 @@ public class Controller {
             // merge the newly added chunks with existing chunks
             SNToChunkMap.get(currentNode).addAll(newChunkSet);
         }
+        System.out.println("in node "+heartbeatMsg.getIpaddress()+" add new chunks:");
+        for(SimplechunkInfo c : newChunkSet){
+            System.out.print(c.getFileName() + "_" + c.getChunkId() + ";");
+        }
 
         //update filechunks metadata with heartbeat msg
         for(SimplechunkInfo i : snci){
@@ -200,13 +201,16 @@ public class Controller {
                         .build();
             }
             chunkMap.put(chunkId, chunkMetadata);
+            fileChunks.put(fileName, chunkMap);
+            System.out.println("update metadata in filechunks map: ");
+            System.out.println("for filename="+fileName+"chunk="+chunkId+"add storing node"+ipaddr_SN);
             if (files.get(fileName).getNumOfChunks() == chunkMap.size()) {
                 FileMetaData fileMetadata = files.get(fileName).toBuilder()
                         .setIsCompleted(true)
                         .build();
                 files.put(fileName, fileMetadata);
+                System.out.println("update metadata in files map");
             }
-            fileChunks.put(fileName, chunkMap);
         }
     }
 
@@ -288,6 +292,7 @@ public class Controller {
                             .build();
                 }
                 files.put(fileName, fileMetaData);
+                //TODO: update filechunks after successfully store a chunk
             }
         } catch (IOException e) {
             System.out.println("failed to handle store file request");

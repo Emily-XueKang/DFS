@@ -56,7 +56,6 @@ public class StorageNode {
             System.out.println("backgroud");
             while(true){
                 File pathfile = new File("/home2/xkang3"); //unix/linux
-                //File pathfile = new File("c:"); //windows
                 long freespace = pathfile.getUsableSpace();
                 ArrayList<SimplechunkInfo> ci = new ArrayList<>();
                 while(!chunkInfos.isEmpty()){
@@ -219,7 +218,7 @@ public class StorageNode {
                     .setStoreChunkMsg(chunk)
                     .build();
             msgWrapper.writeDelimitedTo(storageSock.getOutputStream());
-            System.out.println("sent replica to recovery target SN");
+            System.out.println("sent replica to recovery target SN " + target.getIpaddress());
 
             //then, send replica recovery execution response to controller
             Socket replysocket = srvSocket.accept();
@@ -227,6 +226,7 @@ public class StorageNode {
                     .setReplicaSuccess(true)
                     .build();
             response.writeDelimitedTo(replysocket.getOutputStream());
+            System.out.println("sent recovery response to controller");
             storageSock.close();
             return true;
             } catch (IOException e) {
