@@ -86,10 +86,12 @@ public class Controller {
                             // remove the inactive node from filechunks map
                             //using .remove() method would fail, so use a for loop to copy all active nodes to a new c_nodes list
                             for(StoreNodeInfo ocn : old_c_nodes){
-                                if(!ocn.equals(inactiveNode)){
+                                if(!ocn.getIpaddress().equals(inactiveNode.getIpaddress())){
                                     c_nodes.add(ocn);
+                                    System.out.println("add node " + ocn + " to chunk list of replica backup node list");
                                 }
                             }
+                            System.out.println("size of new c_nodes="+c_nodes.size());
                             //c_nodes is a list of node which contains this corrupted chunk in the inactive node
                             //get the source from updated c_nodes list
                             StoreNodeInfo source = c_nodes.get(rand.nextInt(c_nodes.size()));
@@ -168,19 +170,18 @@ public class Controller {
             SNToChunkMap.get(currentNode).addAll(newChunkSet);
         }
         if(newChunkSet.size()!=0){
-            System.out.print("in node "+heartbeatMsg.getIpaddress()+" add new chunks:");
+            System.out.println("in node "+heartbeatMsg.getIpaddress()+" add new chunks:");
             for(SimplechunkInfo c : newChunkSet){
                 System.out.println(c.getFileName() + "_" + c.getChunkId() + ";");
             }
         }
 
+        String ipaddr_SN = heartbeatMsg.getIpaddress(); //ip address from SN heartbeat
+        int port_SN = heartbeatMsg.getPort(); //port number from SN heartbeat
         //update filechunks metadata with heartbeat msg
         for(SimplechunkInfo i : snci){
             String fileName = i.getFileName();
             int chunkId = i.getChunkId();
-            String ipaddr_SN = heartbeatMsg.getIpaddress(); //ip address from SN heartbeat
-            int port_SN = heartbeatMsg.getPort(); //port number from SN heartbeat
-
             StoreNodeInfo snInfo = StoreNodeInfo.newBuilder()
                     .setIpaddress(ipaddr_SN)
                     .setPort(port_SN)
@@ -189,23 +190,24 @@ public class Controller {
                 fileChunks.put(fileName, new ConcurrentHashMap<Integer, ChunkMetaData>());
             }
             ConcurrentHashMap<Integer, ChunkMetaData> chunkMap = fileChunks.get(fileName);
-            ChunkMetaData chunkMetadata;
-            if (!chunkMap.containsKey(chunkId)) {
-                chunkMetadata = ChunkMetaData.newBuilder()
-                        .setChunkId(chunkId)
-                        .setFileName(fileName)
-                        .addReplicaLocations(snInfo)
-                        .build();
-            } else {
-                chunkMetadata = chunkMap.get(chunkId);
-                chunkMetadata.toBuilder()
-                        .addReplicaLocations(snInfo)
-                        .build();
+            List<StoreNodeInfo> updatedNodes = new ArrayList<StoreNodeInfo>();
+            updatedNodes.add(snInfo);
+            if (chunkMap.containsKey(chunkId)) {
+                List<StoreNodeInfo> existingNodes = chunkMap.get(chunkId).getReplicaLocationsList();
+                updatedNodes.addAll(existingNodes);
             }
+            ChunkMetaData chunkMetadata = ChunkMetaData.newBuilder()
+                    .setChunkId(chunkId)
+                    .setFileName(fileName)
+                    .addAllReplicaLocations(updatedNodes)
+                    .build();
+
             chunkMap.put(chunkId, chunkMetadata);
             fileChunks.put(fileName, chunkMap);
             System.out.println("update metadata in filechunks map: ");
-            System.out.println("for filename="+fileName+",chunkid="+chunkId+" add storing node"+ipaddr_SN);
+            System.out.println("===for filename="+fileName+",chunkid="+chunkId+
+                    " add storing node "+ipaddr_SN +" updated nodes size: " +
+                    chunkMap.get(chunkId).getReplicaLocationsList().size());
             if (files.get(fileName).getNumOfChunks() == chunkMap.size()) {
                 FileMetaData fileMetadata = files.get(fileName).toBuilder()
                         .setIsCompleted(true)
