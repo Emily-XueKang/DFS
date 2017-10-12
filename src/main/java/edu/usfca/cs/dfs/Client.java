@@ -10,7 +10,7 @@ import com.google.protobuf.ByteString;
 
 
 public class Client {
-    final public static int CHUNK_SIZE = 1024;
+    final public static int CHUNK_SIZE = 1024 * 1024;
     public static String CONTROLLER_IP = "bass01";
 
 
@@ -20,9 +20,9 @@ public class Client {
         //c.writeFile("/home2/xkang3/testfile.JPG");
         c.writeFile("/home2/xkang3/chunktest.txt");
 
-        TimeUnit.SECONDS.sleep(10);
+        //TimeUnit.SECONDS.sleep(10);
         //c.retrieveFile("/home2/xkang3/testfile.JPG");
-        c.retrieveFile("/home2/xkang3/chunktest.txt");
+        //c.retrieveFile("/home2/xkang3/chunktest.txt");
     }
 
     public boolean writeFile(String fileName) {

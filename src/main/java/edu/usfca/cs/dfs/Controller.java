@@ -49,6 +49,8 @@ public class Controller {
 //                    handleUpdateChunkReplica(msgWrapper.getUpdateReplicaMsg());
                 } else if(msgWrapper.hasHeartbeatMsg()){
                     handleHeartBeat(msgWrapper.getHeartbeatMsg());
+                } else if(msgWrapper.hasReplicacorruptMsg()){
+                    handleRepCorruption(msgWrapper.getReplicacorruptMsg());
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -134,9 +136,11 @@ public class Controller {
                                 System.out.println("recover replica for file "+filename+"'s chunk "+chunkid);
                                 //after recovery, empty the chunk set of the dead node in SNTochunksMap
                                 SNToChunkMap.get(inactiveNode).clear();
+                                snSocket.close();
                             } catch (IOException e) {
                                 e.printStackTrace();
                             }
+
                         }
                     }
                 }
@@ -296,12 +300,63 @@ public class Controller {
                             .build();
                 }
                 files.put(fileName, fileMetaData);
-                //TODO: update filechunks after successfully store a chunk
             }
         } catch (IOException e) {
             System.out.println("failed to handle store file request");
             e.printStackTrace();
         }
+    }
+
+    public static void handleRepCorruption(replicaCorruptFromSN replicacorruptMsg){
+        String fileName = replicacorruptMsg.getFileName();
+        int chunkId= replicacorruptMsg.getChunkId();
+        StoreNodeInfo corruptRepInSN = replicacorruptMsg.getCorruptChunkInSN();
+        List<StoreNodeInfo> snilist = fileChunks.get(fileName).get(chunkId).getReplicaLocationsList();
+        StoreNodeInfo replicaSource = null;
+        for(StoreNodeInfo s : snilist){
+            if(!s.getIpaddress().equals(corruptRepInSN.getIpaddress())){
+                replicaSource = s;
+                break;
+            }
+        }
+        SimplechunkInfo repChunk = SimplechunkInfo.newBuilder()
+                .setFileName(fileName)
+                .setChunkId(chunkId)
+                .build();
+        recoverReplicaCmdFromController recRepCmd = recoverReplicaCmdFromController.newBuilder()
+                .setTarget(corruptRepInSN)
+                .setSource(replicaSource)
+                .setReplica(repChunk)
+                .build();
+        StorageMessageWrapper msgWrapper = StorageMessageWrapper.newBuilder()
+                .setRecoverReplicaCmd(recRepCmd)
+                .build();
+        boolean rrsucsess = true; //read repair sucessful or not
+        try {//communicate with replica source, trigger recovery process
+            Socket snRecSocket = new Socket(replicaSource.getIpaddress(),replicaSource.getPort());
+            msgWrapper.writeDelimitedTo(snRecSocket.getOutputStream());
+            System.out.println("send recovery command to replica source at "+replicaSource.getIpaddress());
+            recoverReplicaRspFromSN
+                    res = recoverReplicaRspFromSN.parseDelimitedFrom(snRecSocket.getInputStream());
+            if(!res.getReplicaSuccess()){
+                System.out.println("Failed to recover replica.");
+                rrsucsess = false;
+            }
+            System.out.println("recover replica for file "+fileName+"'s chunk "+chunkId);
+            snRecSocket.close();
+            //communicate with replica target which had the corrupted file
+            Socket readSnSocket = new Socket(corruptRepInSN.getIpaddress(),corruptRepInSN.getPort());
+            readRepairFromCtrl repair = readRepairFromCtrl.newBuilder()
+                    .setRepairSuccess(rrsucsess)
+                    .build();
+            repair.writeDelimitedTo(readSnSocket.getOutputStream());
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
+
     }
 
     /* deprecated

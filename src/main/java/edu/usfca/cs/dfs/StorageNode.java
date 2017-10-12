@@ -38,6 +38,7 @@ public class StorageNode {
             }
             if (cmd.hasOption("c")) {
                 CONTROLLER_IP = cmd.getOptionValue("c");
+                System.out.println(CONTROLLER_IP);
             }
         } catch (Exception e) {
             System.out.println("can't parse command line argument");
@@ -139,7 +140,7 @@ public class StorageNode {
             chunkInfos.offer(ci);
 
             try {
-                // after write to local sync with controller node -- debrecated
+                // after write to local sync with controller node -- deprecated
                 /* do not update replica for each storage, instead, us the chunkinfo queue to keep track of updates and sent
                 via heartbeat msg
                 Socket controllerSock = new Socket("localhost", Controller.CONTROLLER_PORT);
@@ -207,6 +208,7 @@ public class StorageNode {
         SimplechunkInfo sci = rrcmsg.getReplica();
         ByteString replicaData = retrieveChunk(sci.getFileName(),sci.getChunkId());
 
+
         try {
             Socket storageSock = new Socket(target.getIpaddress(), target.getPort());
             StoreChunk chunk = StoreChunk.newBuilder()
@@ -219,11 +221,13 @@ public class StorageNode {
                     .build();
             msgWrapper.writeDelimitedTo(storageSock.getOutputStream());
             System.out.println("sent replica to recovery target SN " + target.getIpaddress());
-
+            StoreResponseFromStorage storeResp = StoreResponseFromStorage.parseDelimitedFrom(storageSock.getInputStream());
+            boolean recoverSuccess = storeResp.getSuccess();
+            System.out.println("recover chunk success: " + recoverSuccess);
             //then, send replica recovery execution response to controller
             Socket replysocket = srvSocket.accept();
             recoverReplicaRspFromSN response = recoverReplicaRspFromSN.newBuilder()
-                    .setReplicaSuccess(true)
+                    .setReplicaSuccess(recoverSuccess)
                     .build();
             response.writeDelimitedTo(replysocket.getOutputStream());
             System.out.println("sent recovery response to controller");
@@ -246,7 +250,6 @@ public class StorageNode {
             MD5data = md5.digest();
             return MD5data;
         }catch(java.security.NoSuchAlgorithmException e){
-            //TODO: Print exception message
             System.out.println("fail to generate md5 for chunk");
         }finally {
             return MD5data;
@@ -289,20 +292,41 @@ public class StorageNode {
         try {
             fs = new FileInputStream(chunkFileName);
             fschecksum = new FileInputStream(chunkChecksum);
-
             data = ByteString.readFrom(fs,Client.CHUNK_SIZE);
             byte[] checksum_generated = genChecksum(data);
             byte[] checksum_from_disk  = new byte[16];
             fschecksum.read(checksum_from_disk);
-            if(!Arrays.equals(checksum_from_disk,checksum_generated)){
+            if(!Arrays.equals(checksum_from_disk,checksum_generated)) {
+                data = null;//current data corrupted
                 System.out.println("checksum failed, invalid file chunk");
-                return null;
+                //send replica corrupt msg to controller
+                StoreNodeInfo sni = StoreNodeInfo.newBuilder()
+                        .setIpaddress(getHostname())
+                        .setPort(getHostPort())
+                        .build();
+                replicaCorruptFromSN repCorruptMsg = replicaCorruptFromSN.newBuilder()
+                        .setFileName(fileName)
+                        .setChunkId(chunkId)
+                        .setCorruptChunkInSN(sni)
+                        .build();
+                ControllerMessageWrapper msgWrapper = ControllerMessageWrapper.newBuilder()
+                        .setReplicacorruptMsg(repCorruptMsg)
+                        .build();
+                Socket contrlSock = new Socket(CONTROLLER_IP, Controller.CONTROLLER_PORT);
+                msgWrapper.writeDelimitedTo(contrlSock.getOutputStream());
+                System.out.println("Sent replica corrupt msg to controller");
+                readRepairFromCtrl resp = readRepairFromCtrl.parseDelimitedFrom(contrlSock.getInputStream());
+                boolean recovered = resp.getRepairSuccess();
+                if(recovered){
+                    data = ByteString.readFrom(fs,Client.CHUNK_SIZE);
+                }
             }
         } catch (IOException e) {
 
         } finally {
             try {fs.close();} catch (Exception ex) {/*ignore*/}
         }
+        System.out.println("checksum succeed");
         return data;
     }
 

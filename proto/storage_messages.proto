@@ -56,6 +56,7 @@ message ControllerMessageWrapper {
         RetrieveRequestToController retrieveFileMsg = 2;
         UpdateChunkReplicaToController updateReplicaMsg = 3;
         SNHeartBeat heartbeatMsg = 4;
+        replicaCorruptFromSN replicacorruptMsg = 5;
     }
 }
 
@@ -101,6 +102,16 @@ message recoverReplicaCmdFromController {
 
 message recoverReplicaRspFromSN {
     bool replicaSuccess = 1;
+}
+
+message replicaCorruptFromSN {
+    string fileName = 1;
+    int32 chunkId = 2;
+    StoreNodeInfo corruptChunkInSN = 3;
+}
+
+message readRepairFromCtrl {
+    bool repairSuccess = 1;
 }
 
 
