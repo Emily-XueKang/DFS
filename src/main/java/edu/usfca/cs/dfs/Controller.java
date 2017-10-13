@@ -1,8 +1,6 @@
 package edu.usfca.cs.dfs;
 
-import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
@@ -377,7 +375,6 @@ public class Controller {
                     .build();
         } else {
             chunkMetadata = chunkMap.get(chunkId);
-            // TODO: may need to check if the same nodeInfo already exists in the chunkMap
             chunkMetadata.toBuilder()
                     .addReplicaLocations(nodeInfo)
                     .build();

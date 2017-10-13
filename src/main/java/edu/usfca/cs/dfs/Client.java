@@ -3,31 +3,56 @@ import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import edu.usfca.cs.dfs.StorageMessages.*;
 import com.google.protobuf.ByteString;
+import org.apache.commons.cli.*;
+
 
 
 public class Client {
     final public static int CHUNK_SIZE = 1024 * 1024;
     public static String CONTROLLER_IP = "bass01";
+    private static Options options = new Options();
+
 
 
     public static void main(String[] args)
     throws Exception{
-        Client c = new Client();
+        options.addOption("w", "write", true, "write file");
+        options.addOption("r", "read", true, "read file");
+        options.addOption("l", "list", true, "list files");
+
+        CommandLineParser parser = new BasicParser();
+        CommandLine cmd = null;
         String filename;
-        //c.writeFile("/home2/xkang3/testfile.JPG");
-        c.writeFile("/home2/xkang3/test_file_1.bin");
-        TimeUnit.SECONDS.sleep(5);
-        c.writeFile("/home2/xkang3/test_file_2.bin");
-        TimeUnit.SECONDS.sleep(5);
-        c.writeFile("/home2/xkang3/test_file_3.bin");
-        TimeUnit.SECONDS.sleep(5);
-        c.writeFile("/home2/xkang3/test_file_4.bin");
-        TimeUnit.SECONDS.sleep(5);
-        c.writeFile("/home2/xkang3/test_file_5.bin");
+        Client c = new Client();
+        try {
+            cmd = parser.parse(options, args);
+            if (cmd.hasOption("w")) {
+                filename = cmd.getOptionValue("w");
+                c.writeFile(filename);
+            }
+            if (cmd.hasOption("r")) {
+                filename = cmd.getOptionValue("r");
+                c.retrieveFile(filename);
+            }
+            if (cmd.hasOption("l")) {
+                c.listFiles();
+            }
+        } catch (Exception e) {
+            System.out.println("can't parse command line argument");
+        }
+
+//        c.writeFile("/home2/xkang3/test_file_1.bin");
+//        TimeUnit.SECONDS.sleep(5);
+//        c.writeFile("/home2/xkang3/test_file_2.bin");
+//        TimeUnit.SECONDS.sleep(5);
+//        c.writeFile("/home2/xkang3/test_file_3.bin");
+//        TimeUnit.SECONDS.sleep(5);
+//        c.writeFile("/home2/xkang3/test_file_4.bin");
+//        TimeUnit.SECONDS.sleep(5);
+//        c.writeFile("/home2/xkang3/test_file_5.bin");
 
         //TimeUnit.SECONDS.sleep(10);
         //c.retrieveFile("/home2/xkang3/testfile.JPG");
@@ -162,5 +187,9 @@ public class Client {
         chunksRetriever.waitUntilFinished();
         chunksRetriever.shutdown();
         return true;
+    }
+
+    public void listFiles(){
+        System.out.println("files in DFS:");
     }
 }

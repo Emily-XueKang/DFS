@@ -54,7 +54,6 @@ public class StorageNode {
         @Override
         public void run(){
             //need to scan all data in SN and get the change
-            System.out.println("backgroud");
             while(true){
                 File pathfile = new File("/home2/xkang3"); //unix/linux
                 long freespace = pathfile.getUsableSpace();
@@ -270,12 +269,14 @@ public class StorageNode {
             byte[] chunkMD5= genChecksum(data);
             fsmd5.write(chunkMD5);
         } catch (IOException ex) {
-            // TODO: log exception
+            System.out.println(ex);
             success = false;
         } finally {
             try {fs.close();
                 fsmd5.close();
-            } catch (Exception ex) {/*ignore*/}
+            } catch (Exception ex) {
+                System.out.println(ex);
+            }
         }
         return success;
     }
