@@ -259,16 +259,18 @@ public class StorageNode {
         String chunkFileName = fileName+"_"+chunkId;
         String chunkMD5Name = fileName+"_"+chunkId+"_MD5.txt";
         FileOutputStream fs = null;
-        PrintWriter fsmd5 = null;
+        //PrintWriter fsmd5 = null;
+        FileOutputStream fsmd5 = null;
         boolean success = true;
         try {
-            fsmd5 = new PrintWriter(chunkMD5Name);
+            fsmd5 = new FileOutputStream(chunkMD5Name);
             fs = new FileOutputStream(chunkFileName);
             data.writeTo(fs);
             localChunks.add(chunkFileName);
             byte[] chunkMD5= genChecksum(data);
-            String md5string = DatatypeConverter.printHexBinary(chunkMD5);
-            fsmd5.write(md5string);
+            fsmd5.write(chunkMD5);
+            //String md5string = DatatypeConverter.printHexBinary(chunkMD5);
+            //fsmd5.write(md5string);
         } catch (IOException ex) {
             System.out.println(ex);
             success = false;
@@ -287,7 +289,7 @@ public class StorageNode {
         FileInputStream fschecksum = null;
         ByteString data = null;
         String chunkFileName = fileName+"_"+chunkId;
-        String chunkChecksum = fileName+"_"+chunkId+"_MD5";
+        String chunkChecksum = fileName+"_"+chunkId+"_MD5.txt";
         if (!localChunks.contains(chunkFileName)) {
             return null;
         }
