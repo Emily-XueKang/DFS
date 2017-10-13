@@ -256,18 +256,22 @@ public class StorageNode {
     }
 
     private boolean storeChunkLocal(String fileName, int chunkId, ByteString data){
+        String chunkFileName = fileName+"_"+chunkId;
+        String chunkMD5Name = fileName+"_"+chunkId+"_MD5.txt";
         FileOutputStream fs = null;
-        FileOutputStream fsmd5 = null;
+        PrintWriter fsmd5 = null;
         boolean success = true;
         try {
-            String chunkFileName = fileName+"_"+chunkId;
-            String chunkMD5Name = fileName+"_"+chunkId+"_MD5";
+            fsmd5 = new PrintWriter(chunkMD5Name);
             fs = new FileOutputStream(chunkFileName);
             data.writeTo(fs);
             localChunks.add(chunkFileName);
-            fsmd5 = new FileOutputStream(chunkMD5Name);
             byte[] chunkMD5= genChecksum(data);
-            fsmd5.write(chunkMD5);
+            StringBuffer sb = new StringBuffer("");
+            for (int i = 0; i < chunkMD5.length; i++) {
+                sb.append(Integer.toString((chunkMD5[i] & 0xff) + 0x100, 16).substring(1));
+            }
+            fsmd5.write(sb.toString());
         } catch (IOException ex) {
             System.out.println(ex);
             success = false;
