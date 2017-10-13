@@ -208,8 +208,6 @@ public class StorageNode {
         StoreNodeInfo target = rrcmsg.getTarget();
         SimplechunkInfo sci = rrcmsg.getReplica();
         ByteString replicaData = retrieveChunk(sci.getFileName(),sci.getChunkId());
-
-
         try {
             Socket storageSock = new Socket(target.getIpaddress(), target.getPort());
             StoreChunk chunk = StoreChunk.newBuilder()
@@ -271,7 +269,6 @@ public class StorageNode {
             byte[] chunkMD5= genChecksum(data);
             String md5string = DatatypeConverter.printHexBinary(chunkMD5);
             fsmd5.write(md5string);
-            System.out.println("checksum == " + md5string);
         } catch (IOException ex) {
             System.out.println(ex);
             success = false;

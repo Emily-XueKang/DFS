@@ -71,7 +71,6 @@ public class Controller {
                         activeNodes.remove(inactiveNode);
                         activeNodesTsMap.remove(inactiveNode);
                         System.out.println("inactive node detected at ip " + inactiveNode.getIpaddress() + " port " + inactiveNode.getPort());
-                        // TODO: replicate the chunks that this inactive node maintains
 
                         //1.iterate through all chunks in this dead node
                         Set<SimplechunkInfo> inactiveNodeChunks = SNToChunkMap.get(inactiveNode);
