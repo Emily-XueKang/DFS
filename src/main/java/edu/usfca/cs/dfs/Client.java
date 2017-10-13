@@ -17,8 +17,17 @@ public class Client {
     public static void main(String[] args)
     throws Exception{
         Client c = new Client();
+        String filename;
         //c.writeFile("/home2/xkang3/testfile.JPG");
-        c.writeFile("/home2/xkang3/chunktest.txt");
+        c.writeFile("/home2/xkang3/test_file_1.bin");
+        TimeUnit.SECONDS.sleep(5);
+        c.writeFile("/home2/xkang3/test_file_2.bin");
+        TimeUnit.SECONDS.sleep(5);
+        c.writeFile("/home2/xkang3/test_file_3.bin");
+        TimeUnit.SECONDS.sleep(5);
+        c.writeFile("/home2/xkang3/test_file_4.bin");
+        TimeUnit.SECONDS.sleep(5);
+        c.writeFile("/home2/xkang3/test_file_5.bin");
 
         //TimeUnit.SECONDS.sleep(10);
         //c.retrieveFile("/home2/xkang3/testfile.JPG");
