@@ -14,6 +14,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import com.google.protobuf.ByteString;
 import org.apache.commons.cli.*;
 
+import javax.xml.bind.DatatypeConverter;
+
 
 public class StorageNode {
     public static int STORAGE_PORT = 25101;
@@ -240,7 +242,7 @@ public class StorageNode {
 
     public byte[] genChecksum(ByteString data){
         byte[] databyte = new byte[Client.CHUNK_SIZE];
-        byte[] MD5data = new byte[16]; //MD5 HASH size = 128 bits
+        byte[] MD5data = new byte[1024]; //MD5 HASH size = 128 bits
         data.copyTo(databyte,0);
         //Use MD5 algorithm
         try{
@@ -267,11 +269,9 @@ public class StorageNode {
             data.writeTo(fs);
             localChunks.add(chunkFileName);
             byte[] chunkMD5= genChecksum(data);
-            StringBuffer sb = new StringBuffer("");
-            for (int i = 0; i < chunkMD5.length; i++) {
-                sb.append(Integer.toString((chunkMD5[i] & 0xff) + 0x100, 16).substring(1));
-            }
-            fsmd5.write(sb.toString());
+            String md5string = DatatypeConverter.printHexBinary(chunkMD5);
+            fsmd5.write(md5string);
+            System.out.println("checksum == " + md5string);
         } catch (IOException ex) {
             System.out.println(ex);
             success = false;
