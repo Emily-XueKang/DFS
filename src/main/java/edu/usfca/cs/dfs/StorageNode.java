@@ -224,12 +224,13 @@ public class StorageNode {
             boolean recoverSuccess = storeResp.getSuccess();
             System.out.println("recover chunk success: " + recoverSuccess);
             //then, send replica recovery execution response to controller
-            Socket replysocket = srvSocket.accept();
+            Socket replysocket = new Socket(CONTROLLER_IP, Controller.CONTROLLER_PORT);
             recoverReplicaRspFromSN response = recoverReplicaRspFromSN.newBuilder()
                     .setReplicaSuccess(recoverSuccess)
                     .build();
             response.writeDelimitedTo(replysocket.getOutputStream());
             System.out.println("sent recovery response to controller");
+            replysocket.close();
             storageSock.close();
             return true;
             } catch (IOException e) {
