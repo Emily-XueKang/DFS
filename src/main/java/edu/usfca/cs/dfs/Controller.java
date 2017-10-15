@@ -21,11 +21,11 @@ public class Controller {
     private static Random rand = new Random();
     private static Socket socket;
 
+
     public static void main(String[] args) {
         System.out.println("Starting controller on port " + CONTROLLER_PORT + "...");
         Thread scanner = new Thread(new Scanner());
         scanner.start();
-        // TODO: Load data structures to memory, active nodes discovery
         ServerSocket serversock = null;
         try {
             serversock = new ServerSocket(CONTROLLER_PORT);
@@ -90,7 +90,7 @@ public class Controller {
                                     System.out.println("add node " + ocn + " to chunk list of replica backup node list");
                                 }
                             }
-                            System.out.println("size of new c_nodes="+c_nodes.size());
+                            //System.out.println("size of new c_nodes="+c_nodes.size());
                             //c_nodes is a list of node which contains this corrupted chunk in the inactive node
                             //get the source from updated c_nodes list
                             StoreNodeInfo source = c_nodes.get(rand.nextInt(c_nodes.size()));
