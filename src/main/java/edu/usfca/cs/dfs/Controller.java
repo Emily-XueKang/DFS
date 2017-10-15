@@ -62,7 +62,7 @@ public class Controller {
         @Override
         public void run(){
             //need to scan all data in SN and get the change
-            System.out.println("background scanning thread started");
+            System.out.println("Background scanning thread started");
             while(true) {
                 for (Map.Entry<StoreNodeInfo, Long> entry : activeNodesTsMap.entrySet()) {
                     if (System.currentTimeMillis() - entry.getValue() > NODE_INACTIVE_THRESHOLD_MS) {
@@ -70,14 +70,14 @@ public class Controller {
                         StoreNodeInfo inactiveNode = entry.getKey();
                         activeNodes.remove(inactiveNode);
                         activeNodesTsMap.remove(inactiveNode);
-                        System.out.println("inactive node detected at ip " + inactiveNode.getIpaddress() + " port " + inactiveNode.getPort());
+                        System.out.println("Inactive node detected at ip " + inactiveNode.getIpaddress() + " port " + inactiveNode.getPort());
 
                         //1.iterate through all chunks in this dead node
                         Set<SimplechunkInfo> inactiveNodeChunks = SNToChunkMap.get(inactiveNode);
                         for(SimplechunkInfo sci:inactiveNodeChunks){
                             String filename = sci.getFileName();
                             int chunkid = sci.getChunkId();
-                            System.out.println("inactive node file-chunk: " + filename + "-" +chunkid);
+                            System.out.println("Inactive node file-chunk: " + filename + "-" +chunkid);
                             //2.in fileChunks map, for each chunk that need to be replicated, find its backup nodes
                             ChunkMetaData oldChunkMetadata = fileChunks.get(filename).get(chunkid);
                             List<StoreNodeInfo> old_c_nodes = oldChunkMetadata.getReplicaLocationsList();
@@ -87,7 +87,7 @@ public class Controller {
                             for(StoreNodeInfo ocn : old_c_nodes){
                                 if(!ocn.getIpaddress().equals(inactiveNode.getIpaddress())){
                                     c_nodes.add(ocn);
-                                    System.out.println("add node " + ocn + " to chunk list of replica backup node list");
+                                    System.out.println("Add node " + ocn + " to chunk list of replica backup node list");
                                 }
                             }
                             //System.out.println("size of new c_nodes="+c_nodes.size());
@@ -109,8 +109,8 @@ public class Controller {
                                 }
                             }
                             StoreNodeInfo target = targetPool.get(rand.nextInt(targetPool.size()));
-                            System.out.println("source node for replica recovery: ip="+source.getIpaddress()+"port="+source.getPort());
-                            System.out.println("target node for replica recovery: ip="+target.getIpaddress()+"port="+target.getPort());
+                            System.out.println("Source node for replica recovery: ip="+source.getIpaddress()+"port="+source.getPort());
+                            System.out.println("Target node for replica recovery: ip="+target.getIpaddress()+"port="+target.getPort());
                             //4.build recover replica message
                             recoverReplicaCmdFromController rrmsg = recoverReplicaCmdFromController.newBuilder()
                                     .setTarget(target)
@@ -124,13 +124,13 @@ public class Controller {
                             try {
                                 Socket snSocket = new Socket(source.getIpaddress(),source.getPort());
                                 msgWrapper.writeDelimitedTo(snSocket.getOutputStream());
-                                System.out.println("send recovery command to SN "+source.getIpaddress());
+                                System.out.println("Send recovery command to SN "+source.getIpaddress());
                                 recoverReplicaRspFromSN
                                         res = recoverReplicaRspFromSN.parseDelimitedFrom(snSocket.getInputStream());
                                 if(!res.getReplicaSuccess()){
                                     System.out.println("Failed to recover replica.");
                                 }
-                                System.out.println("recover replica for file "+filename+"'s chunk "+chunkid);
+                                System.out.println("Recover replica for file "+filename+"'s chunk "+chunkid);
                                 //after recovery, empty the chunk set of the dead node in SNTochunksMap
                                 SNToChunkMap.get(inactiveNode).clear();
                                 snSocket.close();
@@ -158,7 +158,7 @@ public class Controller {
                 .build();
         if (!activeNodesTsMap.containsKey(currentNode)) {
             activeNodes.add(currentNode); // new node discovered
-            System.out.println("new active node detected at ip: " + currentNode.getIpaddress() + " port: " + currentNode.getPort());
+            System.out.println("New active node detected at ip: " + currentNode.getIpaddress() + " port: " + currentNode.getPort());
         }
         // update the latest active timestamp to the storage node
         activeNodesTsMap.put(currentNode, System.currentTimeMillis());
@@ -237,7 +237,7 @@ public class Controller {
                         .setIsCompleted(true)
                         .build();
                 response.writeDelimitedTo(socket.getOutputStream());
-                System.out.println("returning file metadata for file: " + fileName);
+                System.out.println("Returning file metadata for file: " + fileName);
             } else {
                 // file doesn't exist
                 response = FileMetaData.newBuilder()
@@ -245,10 +245,10 @@ public class Controller {
                         .setIsCompleted(false)
                         .build();
                 response.writeDelimitedTo(socket.getOutputStream());
-                System.out.println("file doesn't exist " + fileName);
+                System.out.println("File doesn't exist " + fileName);
             }
         } catch (IOException e) {
-            System.out.println("failed to handle retrieve file request");
+            System.out.println("Failed to handle retrieve file request");
             e.printStackTrace();
         }
     }
@@ -299,7 +299,7 @@ public class Controller {
                 files.put(fileName, fileMetaData);
             }
         } catch (IOException e) {
-            System.out.println("failed to handle store file request");
+            System.out.println("Failed to handle store file request");
             e.printStackTrace();
         }
     }
@@ -332,14 +332,14 @@ public class Controller {
         try {//communicate with replica source, trigger recovery process
             Socket snRecSocket = new Socket(replicaSource.getIpaddress(),replicaSource.getPort());
             msgWrapper.writeDelimitedTo(snRecSocket.getOutputStream());
-            System.out.println("send recovery command to replica source at "+replicaSource.getIpaddress());
+            System.out.println("Send recovery command to replica source at "+replicaSource.getIpaddress());
             recoverReplicaRspFromSN
                     res = recoverReplicaRspFromSN.parseDelimitedFrom(snRecSocket.getInputStream());
             if(!res.getReplicaSuccess()){
                 System.out.println("Failed to recover replica.");
                 rrsucsess = false;
             }
-            System.out.println("recover replica for file "+fileName+"'s chunk "+chunkId);
+            System.out.println("Recovered replica for file "+fileName+"'s chunk "+chunkId);
             snRecSocket.close();
             //communicate with replica target which had the corrupted file
             Socket readSnSocket = new Socket(corruptRepInSN.getIpaddress(),corruptRepInSN.getPort());
@@ -351,9 +351,6 @@ public class Controller {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-
-
     }
 
     /* deprecated

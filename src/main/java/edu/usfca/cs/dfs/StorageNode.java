@@ -75,9 +75,9 @@ public class StorageNode {
                             .build();
                     Socket controllerSock = new Socket(CONTROLLER_IP, Controller.CONTROLLER_PORT);
                     msgWrapper.writeDelimitedTo(controllerSock.getOutputStream());
-                    System.out.println("sent heartbeat...");
+                    System.out.println("Sent heartbeat...");
                 } catch (IOException e) {
-                    System.out.println("failed to send update info through heartbeat");
+                    System.out.println("Failed to send update info through heartbeat");
                     e.printStackTrace();
                 }
                 try {
@@ -92,7 +92,7 @@ public class StorageNode {
     public void start() {
         try {
             srvSocket = new ServerSocket(STORAGE_PORT);
-            System.out.println(" storage node started on port " + STORAGE_PORT);
+            System.out.println("Storage node started on port " + STORAGE_PORT);
             while (true) {
                 Socket socket = srvSocket.accept();
                 StorageMessages.StorageMessageWrapper msgWrapper
@@ -176,7 +176,7 @@ public class StorageNode {
                     for (int idx = 1; idx < nodeList.size(); idx++) { //remove first node which is nodeList.get(0), continue the pipeline from the second node which is nodeList.get(1)
                         remainNodes.add(nodeList.get(idx));
                     }
-                    System.out.println("remaining nodes size in pipeline: " + remainNodes.size());
+                    System.out.println("Remaining nodes size in pipeline: " + remainNodes.size());
 
                     // setup a new socket to write to storageNode
                     Socket storageSock = new Socket(targetNode.getIpaddress(), targetNode.getPort());
@@ -191,7 +191,6 @@ public class StorageNode {
                             .build();
                     msgWrapper.writeDelimitedTo(storageSock.getOutputStream());
                     System.out.println("Forwarding to node: " + targetNode.getIpaddress() + ":" + targetNode.getPort());
-
                     storageSock.close();
                     // Don't wait for the response from pipeline writing
                     // i.e. return once the data is write to local successfully
@@ -219,17 +218,17 @@ public class StorageNode {
                     .setStoreChunkMsg(chunk)
                     .build();
             msgWrapper.writeDelimitedTo(storageSock.getOutputStream());
-            System.out.println("sent replica to recovery target SN " + target.getIpaddress());
+            System.out.println("Sent replica to recovery target SN " + target.getIpaddress());
             StoreResponseFromStorage storeResp = StoreResponseFromStorage.parseDelimitedFrom(storageSock.getInputStream());
             boolean recoverSuccess = storeResp.getSuccess();
-            System.out.println("recover chunk success: " + recoverSuccess);
+            System.out.println("Recover chunk success: " + recoverSuccess);
             //then, send replica recovery execution response to controller
             Socket replysocket = new Socket(CONTROLLER_IP, Controller.CONTROLLER_PORT);
             recoverReplicaRspFromSN response = recoverReplicaRspFromSN.newBuilder()
                     .setReplicaSuccess(recoverSuccess)
                     .build();
             response.writeDelimitedTo(replysocket.getOutputStream());
-            System.out.println("sent recovery response to controller");
+            System.out.println("Sent recovery response to controller");
             replysocket.close();
             storageSock.close();
             return true;
@@ -250,7 +249,7 @@ public class StorageNode {
             MD5data = md5.digest();
             return MD5data;
         }catch(java.security.NoSuchAlgorithmException e){
-            System.out.println("fail to generate md5 for chunk");
+            System.out.println("Fail to generate md5 for chunk");
         }finally {
             return MD5data;
         }
@@ -303,7 +302,7 @@ public class StorageNode {
             fschecksum.read(checksum_from_disk);
             if(!Arrays.equals(checksum_from_disk,checksum_generated)) {
                 data = null;//current data corrupted
-                System.out.println("checksum failed, invalid file chunk");
+                System.out.println("Checksum failed, invalid file chunk");
                 //send replica corrupt msg to controller
                 StoreNodeInfo sni = StoreNodeInfo.newBuilder()
                         .setIpaddress(getHostname())
@@ -319,6 +318,7 @@ public class StorageNode {
                         .build();
                 Socket contrlSock = new Socket(CONTROLLER_IP, Controller.CONTROLLER_PORT);
                 msgWrapper.writeDelimitedTo(contrlSock.getOutputStream());
+                System.out.println("Need to recover chunk "+fileName+"_"+chunkId+"in node"+sni.getIpaddress());
                 System.out.println("Sent replica corrupt msg to controller");
                 readRepairFromCtrl resp = readRepairFromCtrl.parseDelimitedFrom(contrlSock.getInputStream());
                 boolean recovered = resp.getRepairSuccess();
@@ -331,7 +331,7 @@ public class StorageNode {
         } finally {
             try {fs.close();} catch (Exception ex) {/*ignore*/}
         }
-        System.out.println("checksum succeed");
+        System.out.println("Checksum succeed");
         return data;
     }
 
@@ -345,7 +345,6 @@ public class StorageNode {
     }
 
     private static int getHostPort() {
-        // TODO: make port number const
         return STORAGE_PORT;
     }
 }

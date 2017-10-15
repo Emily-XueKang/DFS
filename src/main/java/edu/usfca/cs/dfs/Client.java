@@ -81,15 +81,15 @@ public class Client {
                         .setStoreFileMsg(srtc)
                         .build();
                 ControllerMsgWrapper.writeDelimitedTo(controllerSock.getOutputStream());
-                System.out.println("sent request to controller..");
+                System.out.println("Sent request to controller..");
                 StoreResponseFromController srfc = StoreResponseFromController.parseDelimitedFrom(controllerSock.getInputStream());
-                System.out.println("get response from controller..");
+                System.out.println("Get response from controller..");
                 List<StoreNodeInfo> nodeList = srfc.getInfoList();
                 if (nodeList.isEmpty()) {
-                    throw new Exception("no available nodes to store file: " + fileName);
+                    throw new Exception("No available nodes to store file: " + fileName);
                 }
                 // write to first StoreNode and pass the remain of the list
-                System.out.println("get" + nodeList.size() + " nodes to store file: ");
+                System.out.println("Get" + nodeList.size() + " nodes to store file: ");
                 for(StoreNodeInfo sn : nodeList){
                     System.out.print(sn);
                 }
@@ -98,7 +98,7 @@ public class Client {
                 for (int idx = 1; idx < nodeList.size(); idx++) {
                     remainNodes.add(nodeList.get(idx));
                 }
-                System.out.print("one node selected as first: " + targetNode);
+                System.out.print("One node selected as first: " + targetNode);
                 // setup a new socket to write to storageNode
                 Socket storageSock = new Socket(targetNode.getIpaddress(), targetNode.getPort());
                 StoreChunk chunk = StoreChunk.newBuilder()
@@ -115,7 +115,7 @@ public class Client {
                 // wait response from SN
                 StoreResponseFromStorage storeResp = StoreResponseFromStorage.parseDelimitedFrom(storageSock.getInputStream());
                 success = storeResp.getSuccess();
-                System.out.println("store chunk success: " + success);
+                System.out.println("Store chunk success: " + success);
 
                 storageSock.close();
                 controllerSock.close();
@@ -148,7 +148,7 @@ public class Client {
                         .build();
                 count++;
                 chunks.add(storeChunkMsg);
-                System.out.println("spliting " + bytesAmount + " bytes of data into one chunk...");
+                System.out.println("Spliting " + bytesAmount + " bytes of data into one chunk...");
             }
             System.out.println("File spilitted to " + count + " chunks");
 
@@ -174,7 +174,7 @@ public class Client {
             controllerSock.close();
 
         } catch (IOException e) {
-            System.out.println("fail to query controller Node for fileMetaData ");
+            System.out.println("Fail to query controller Node for fileMetaData ");
             e.printStackTrace();
             return false;
         }
@@ -190,6 +190,6 @@ public class Client {
     }
 
     public void listFiles(){
-        System.out.println("files in DFS:");
+        System.out.println("Files in DFS:");
     }
 }
