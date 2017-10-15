@@ -210,11 +210,11 @@ public class Controller {
                     ", add storing node "+ipaddr_SN +" updated nodes size: " +
                     chunkMap.get(chunkId).getReplicaLocationsList().size());
             if (files.get(fileName).getNumOfChunks() == chunkMap.size()) {
+                System.out.println("Update metadata in files map.");
                 FileMetaData fileMetadata = files.get(fileName).toBuilder()
                         .setIsCompleted(true)
                         .build();
                 files.put(fileName, fileMetadata);
-                System.out.println("update metadata in files map");
             }
         }
     }
