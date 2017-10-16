@@ -48,7 +48,7 @@ public class StorageNode {
         StorageNode sn = new StorageNode();
         Thread background = sn.new HeartBeat();
         background.start();
-        sn.start();
+        sn.process();
     }
 
     //inner class, background thread for heartbeat
@@ -89,7 +89,44 @@ public class StorageNode {
         }
     }
 
-    public void start() {
+    public class RequestWorker implements Runnable{
+        Socket socket = null;
+        StorageMessageWrapper msgWrapper = null;
+
+        public RequestWorker(Socket skt, StorageMessageWrapper msgw){
+            socket = skt;
+            msgWrapper = msgw;
+        }
+        public void run(){
+            try {
+            if (msgWrapper.hasStoreChunkMsg()) {
+                boolean success = storeChunk(msgWrapper.getStoreChunkMsg());
+                StoreResponseFromStorage resp = StoreResponseFromStorage.newBuilder()
+                        .setSuccess(success)
+                        .build();
+                    resp.writeDelimitedTo(socket.getOutputStream());
+            } else if (msgWrapper.hasRetrieveChunkMsg()) {
+                RetrieveRequestToStorage request = msgWrapper.getRetrieveChunkMsg();
+                ByteString data = retrieveChunk(request.getFileName(), request.getChunkId());
+                RetrieveResponseFromStorage resp = RetrieveResponseFromStorage.newBuilder()
+                        .setData(data)
+                        .build();
+                resp.writeDelimitedTo(socket.getOutputStream());
+            } else if (msgWrapper.hasRecoverReplicaCmd()) {
+                recoverReplicaCmdFromController recoverCommand = msgWrapper.getRecoverReplicaCmd();
+                boolean success = recoverReplica(recoverCommand);
+                recoverReplicaRspFromSN recoverResponse = recoverReplicaRspFromSN.newBuilder()
+                        .setReplicaSuccess(success)
+                        .build();
+                recoverResponse.writeDelimitedTo(socket.getOutputStream());
+            }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void process() {
         try {
             srvSocket = new ServerSocket(STORAGE_PORT);
             System.out.println("Storage node started on port " + STORAGE_PORT);
@@ -98,27 +135,7 @@ public class StorageNode {
                 StorageMessages.StorageMessageWrapper msgWrapper
                         = StorageMessages.StorageMessageWrapper.parseDelimitedFrom(
                         socket.getInputStream());
-                if (msgWrapper.hasStoreChunkMsg()) {
-                    boolean success = storeChunk(msgWrapper.getStoreChunkMsg());
-                    StoreResponseFromStorage resp = StoreResponseFromStorage.newBuilder()
-                            .setSuccess(success)
-                            .build();
-                    resp.writeDelimitedTo(socket.getOutputStream());
-                } else if (msgWrapper.hasRetrieveChunkMsg()) {
-                    RetrieveRequestToStorage request = msgWrapper.getRetrieveChunkMsg();
-                    ByteString data = retrieveChunk(request.getFileName(), request.getChunkId());
-                    RetrieveResponseFromStorage resp = RetrieveResponseFromStorage.newBuilder()
-                            .setData(data)
-                            .build();
-                    resp.writeDelimitedTo(socket.getOutputStream());
-                } else if (msgWrapper.hasRecoverReplicaCmd()) {
-                    recoverReplicaCmdFromController recoverCommand = msgWrapper.getRecoverReplicaCmd();
-                    boolean success = recoverReplica(recoverCommand);
-                    recoverReplicaRspFromSN recoverResponse = recoverReplicaRspFromSN.newBuilder()
-                            .setReplicaSuccess(success)
-                            .build();
-                    recoverResponse.writeDelimitedTo(socket.getOutputStream());
-                }
+            new Thread(new RequestWorker(socket,msgWrapper));
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -209,7 +226,6 @@ public class StorageNode {
         ByteString replicaData = retrieveChunk(sci.getFileName(),sci.getChunkId());
         try {
             Socket storageSock = new Socket(target.getIpaddress(), target.getPort());
-            System.out.println("recovery socket connected");
             StoreChunk chunk = StoreChunk.newBuilder()
                     .setFileName(sci.getFileName())
                     .setChunkId(sci.getChunkId())
@@ -218,6 +234,7 @@ public class StorageNode {
             StorageMessageWrapper msgWrapper = StorageMessageWrapper.newBuilder()
                     .setStoreChunkMsg(chunk)
                     .build();
+            System.out.println("recovery socket connected with "+target.getIpaddress());
             msgWrapper.writeDelimitedTo(storageSock.getOutputStream());
             System.out.println("Sent replica to recovery target SN " + target.getIpaddress()+" at port "+target.getPort());
             StoreResponseFromStorage storeResp = StoreResponseFromStorage.parseDelimitedFrom(storageSock.getInputStream());
