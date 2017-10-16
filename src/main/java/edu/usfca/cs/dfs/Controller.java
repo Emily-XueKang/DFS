@@ -130,14 +130,15 @@ public class Controller {
                                     System.out.println("Failed to recover replica.");
                                 }
                                 System.out.println("Recovered replica for file "+filename+"'s chunk "+chunkid);
-                                //after recovery, empty the chunk set of the dead node in SNTochunksMap
-                                SNToChunkMap.get(inactiveNode).clear();
+
                                 snSocket.close();
                             } catch (IOException e) {
                                 e.printStackTrace();
                             }
-
                         }
+                        //after recovery, empty the chunk set of the dead node in SNTochunksMap
+                        //avoid ConcurrentModificationException while reading and modifying
+                        SNToChunkMap.get(inactiveNode).clear();
                     }
                 }
                 try {
