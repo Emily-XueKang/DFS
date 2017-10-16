@@ -318,13 +318,14 @@ public class StorageNode {
                         .build();
                 Socket contrlSock = new Socket(CONTROLLER_IP, Controller.CONTROLLER_PORT);
                 msgWrapper.writeDelimitedTo(contrlSock.getOutputStream());
-                System.out.println("Need to recover chunk "+fileName+"_"+chunkId+"in node"+sni.getIpaddress());
+                System.out.println("Need to recover chunk "+fileName+"_"+chunkId+" in node "+sni.getIpaddress());
                 System.out.println("Sent replica corrupt msg to controller");
                 readRepairFromCtrl resp = readRepairFromCtrl.parseDelimitedFrom(contrlSock.getInputStream());
                 boolean recovered = resp.getRepairSuccess();
                 if(recovered){
                     data = ByteString.readFrom(fs,Client.CHUNK_SIZE);
                 }
+                contrlSock.close();
             }
         } catch (IOException e) {
 

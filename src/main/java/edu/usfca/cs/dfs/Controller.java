@@ -87,7 +87,7 @@ public class Controller {
                             for(StoreNodeInfo ocn : old_c_nodes){
                                 if(!ocn.getIpaddress().equals(inactiveNode.getIpaddress())){
                                     c_nodes.add(ocn);
-                                    System.out.println("Add node " + ocn + " to chunk list of replica backup node list");
+                                    //System.out.println("Add node " + ocn + " to chunk list of replica backup node list");
                                 }
                             }
                             //System.out.println("size of new c_nodes="+c_nodes.size());
@@ -130,7 +130,7 @@ public class Controller {
                                 if(!res.getReplicaSuccess()){
                                     System.out.println("Failed to recover replica.");
                                 }
-                                System.out.println("Recover replica for file "+filename+"'s chunk "+chunkid);
+                                System.out.println("Recovered replica for file "+filename+"'s chunk "+chunkid);
                                 //after recovery, empty the chunk set of the dead node in SNTochunksMap
                                 SNToChunkMap.get(inactiveNode).clear();
                                 snSocket.close();
@@ -336,10 +336,10 @@ public class Controller {
             recoverReplicaRspFromSN
                     res = recoverReplicaRspFromSN.parseDelimitedFrom(snRecSocket.getInputStream());
             if(!res.getReplicaSuccess()){
-                System.out.println("Failed to recover replica.");
+                System.out.println("Failed to repair replica.");
                 rrsucsess = false;
             }
-            System.out.println("Recovered replica for file "+fileName+"'s chunk "+chunkId);
+            System.out.println("Repaired replica for file "+fileName+"'s chunk "+chunkId);
             snRecSocket.close();
             //communicate with replica target which had the corrupted file
             Socket readSnSocket = new Socket(corruptRepInSN.getIpaddress(),corruptRepInSN.getPort());
@@ -347,6 +347,7 @@ public class Controller {
                     .setRepairSuccess(rrsucsess)
                     .build();
             repair.writeDelimitedTo(readSnSocket.getOutputStream());
+            readSnSocket.close();
 
         } catch (IOException e) {
             e.printStackTrace();
