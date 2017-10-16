@@ -301,12 +301,13 @@ public class StorageNode {
             byte[] checksum_from_disk  = new byte[16];
             fschecksum.read(checksum_from_disk);
             if(!Arrays.equals(checksum_from_disk,checksum_generated)) {
+                int REAEREPARI_PORT = 25111;
                 data = null;//current data corrupted
                 System.out.println("Checksum failed, invalid file chunk");
                 //send replica corrupt msg to controller
                 StoreNodeInfo sni = StoreNodeInfo.newBuilder()
                         .setIpaddress(getHostname())
-                        .setPort(getHostPort())
+                        .setPort(REAEREPARI_PORT)
                         .build();
                 replicaCorruptFromSN repCorruptMsg = replicaCorruptFromSN.newBuilder()
                         .setFileName(fileName)
@@ -316,6 +317,7 @@ public class StorageNode {
                 ControllerMessageWrapper msgWrapper = ControllerMessageWrapper.newBuilder()
                         .setReplicacorruptMsg(repCorruptMsg)
                         .build();
+
                 Socket contrlSock = new Socket(CONTROLLER_IP, Controller.CONTROLLER_PORT);
                 msgWrapper.writeDelimitedTo(contrlSock.getOutputStream());
                 System.out.println("Need to recover chunk "+fileName+"_"+chunkId+" in node "+sni.getIpaddress()+" at port "+sni.getPort());
