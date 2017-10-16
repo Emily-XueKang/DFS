@@ -20,7 +20,7 @@ public class Controller {
 
     private static Random rand = new Random();
     private static Socket socket;
-    
+
     public static void main(String[] args) {
         System.out.println("Starting controller on port " + CONTROLLER_PORT + "...");
         Thread scanner = new Thread(new Scanner());

@@ -135,7 +135,8 @@ public class StorageNode {
                 StorageMessages.StorageMessageWrapper msgWrapper
                         = StorageMessages.StorageMessageWrapper.parseDelimitedFrom(
                         socket.getInputStream());
-            new Thread(new RequestWorker(socket,msgWrapper));
+                Thread requestworker = new Thread(new RequestWorker(socket,msgWrapper));
+                requestworker.start();
             }
         } catch (Exception e) {
             e.printStackTrace();
