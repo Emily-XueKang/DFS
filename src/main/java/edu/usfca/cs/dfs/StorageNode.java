@@ -320,7 +320,9 @@ public class StorageNode {
                 msgWrapper.writeDelimitedTo(contrlSock.getOutputStream());
                 System.out.println("Need to recover chunk "+fileName+"_"+chunkId+" in node "+sni.getIpaddress()+" at port "+sni.getPort());
                 System.out.println("Sent replica corrupt msg to controller");
-                readRepairFromCtrl resp = readRepairFromCtrl.parseDelimitedFrom(contrlSock.getInputStream());
+                StorageMessageWrapper msgWrapper2 = StorageMessageWrapper
+                        .parseDelimitedFrom(contrlSock.getInputStream());
+                readRepairFromCtrl resp = msgWrapper2.getReadRepairRsp();
                 boolean recovered = resp.getRepairSuccess();
                 if(recovered){
                     data = ByteString.readFrom(fs,Client.CHUNK_SIZE);

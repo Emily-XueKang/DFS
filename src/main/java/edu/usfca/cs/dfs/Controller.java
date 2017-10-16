@@ -342,15 +342,16 @@ public class Controller {
             System.out.println("Repaired replica for file "+fileName+"'s chunk "+chunkId);
             snRecSocket.close();
             //communicate with replica target which had the corrupted file
-            Socket readSnSocket = new Socket(corruptRepInSN.getIpaddress(),corruptRepInSN.getPort());
+//            Socket readSnSocket = new Socket(corruptRepInSN.getIpaddress(),corruptRepInSN.getPort());
             readRepairFromCtrl repair = readRepairFromCtrl.newBuilder()
                     .setRepairSuccess(rrsucsess)
                     .build();
             StorageMessageWrapper msgWrapper2 = StorageMessageWrapper.newBuilder()
                     .setReadRepairRsp(repair)
                     .build();
-            msgWrapper2.writeDelimitedTo(readSnSocket.getOutputStream());
-            readSnSocket.close();
+//            msgWrapper2.writeDelimitedTo(readSnSocket.getOutputStream());
+//            readSnSocket.close();
+            msgWrapper2.writeDelimitedTo(socket.getOutputStream());
 
         } catch (IOException e) {
             e.printStackTrace();
