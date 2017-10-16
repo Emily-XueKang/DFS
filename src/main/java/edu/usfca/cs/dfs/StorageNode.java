@@ -209,6 +209,7 @@ public class StorageNode {
         ByteString replicaData = retrieveChunk(sci.getFileName(),sci.getChunkId());
         try {
             Socket storageSock = new Socket(target.getIpaddress(), target.getPort());
+            System.out.println("recovery socket connected");
             StoreChunk chunk = StoreChunk.newBuilder()
                     .setFileName(sci.getFileName())
                     .setChunkId(sci.getChunkId())
@@ -220,17 +221,17 @@ public class StorageNode {
             msgWrapper.writeDelimitedTo(storageSock.getOutputStream());
             System.out.println("Sent replica to recovery target SN " + target.getIpaddress()+" at port "+target.getPort());
             StoreResponseFromStorage storeResp = StoreResponseFromStorage.parseDelimitedFrom(storageSock.getInputStream());
+            storageSock.close();
             boolean recoverSuccess = storeResp.getSuccess();
             System.out.println("Recover chunk success: " + recoverSuccess);
-            //then, send replica recovery execution response to controller
-            Socket replysocket = new Socket(CONTROLLER_IP, Controller.CONTROLLER_PORT);
-            recoverReplicaRspFromSN response = recoverReplicaRspFromSN.newBuilder()
-                    .setReplicaSuccess(recoverSuccess)
-                    .build();
-            response.writeDelimitedTo(replysocket.getOutputStream());
-            System.out.println("Sent recovery response to controller");
-            replysocket.close();
-            storageSock.close();
+//            //then, send replica recovery execution response to controller
+//            Socket replysocket = new Socket(CONTROLLER_IP, Controller.CONTROLLER_PORT);
+//            recoverReplicaRspFromSN response = recoverReplicaRspFromSN.newBuilder()
+//                    .setReplicaSuccess(recoverSuccess)
+//                    .build();
+//            response.writeDelimitedTo(replysocket.getOutputStream());
+            //System.out.println("Sent recovery response to controller");
+//            replysocket.close();
             return true;
             } catch (IOException e) {
             e.printStackTrace();
@@ -301,13 +302,13 @@ public class StorageNode {
             byte[] checksum_from_disk  = new byte[16];
             fschecksum.read(checksum_from_disk);
             if(!Arrays.equals(checksum_from_disk,checksum_generated)) {
-                int REAEREPARI_PORT = 25111;
+                //int READREPAIR_PORT = 25111;
                 data = null;//current data corrupted
                 System.out.println("Checksum failed, invalid file chunk");
                 //send replica corrupt msg to controller
                 StoreNodeInfo sni = StoreNodeInfo.newBuilder()
                         .setIpaddress(getHostname())
-                        .setPort(REAEREPARI_PORT)
+                        .setPort(getHostPort())
                         .build();
                 replicaCorruptFromSN repCorruptMsg = replicaCorruptFromSN.newBuilder()
                         .setFileName(fileName)
@@ -317,7 +318,6 @@ public class StorageNode {
                 ControllerMessageWrapper msgWrapper = ControllerMessageWrapper.newBuilder()
                         .setReplicacorruptMsg(repCorruptMsg)
                         .build();
-
                 Socket contrlSock = new Socket(CONTROLLER_IP, Controller.CONTROLLER_PORT);
                 msgWrapper.writeDelimitedTo(contrlSock.getOutputStream());
                 System.out.println("Need to recover chunk "+fileName+"_"+chunkId+" in node "+sni.getIpaddress()+" at port "+sni.getPort());
