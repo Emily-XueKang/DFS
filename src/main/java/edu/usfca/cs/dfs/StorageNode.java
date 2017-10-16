@@ -244,14 +244,14 @@ public class StorageNode {
             storageSock.close();
             boolean recoverSuccess = storeResp.getSuccess();
             System.out.println("Recover chunk success: " + recoverSuccess);
-//            //then, send replica recovery execution response to controller
-//            Socket replysocket = new Socket(CONTROLLER_IP, Controller.CONTROLLER_PORT);
-//            recoverReplicaRspFromSN response = recoverReplicaRspFromSN.newBuilder()
-//                    .setReplicaSuccess(recoverSuccess)
-//                    .build();
-//            response.writeDelimitedTo(replysocket.getOutputStream());
-            //System.out.println("Sent recovery response to controller");
-//            replysocket.close();
+            //then, send replica recovery execution response to controller
+            Socket replysocket = new Socket(CONTROLLER_IP, Controller.CONTROLLER_PORT);
+            recoverReplicaRspFromSN response = recoverReplicaRspFromSN.newBuilder()
+                    .setReplicaSuccess(recoverSuccess)
+                    .build();
+            response.writeDelimitedTo(replysocket.getOutputStream());
+            System.out.println("Sent recovery response to controller");
+            replysocket.close();
             return true;
             } catch (IOException e) {
             e.printStackTrace();
@@ -347,17 +347,19 @@ public class StorageNode {
                 System.out.println("Got response from Controler");
                 boolean recovered = resp.getRepairSuccess();
                 if(recovered){
-                    data = ByteString.readFrom(fs,Client.CHUNK_SIZE);
-                    System.out.println("recovered == " + recovered);
+                    //data = ByteString.readFrom(fs,Client.CHUNK_SIZE);
+                    System.out.println("Recovered == " + recovered);
                 }
                 contrlSock.close();
+            }
+            else{
+                System.out.println("Checksum succeed");
             }
         } catch (IOException e) {
 
         } finally {
             try {fs.close();} catch (Exception ex) {/*ignore*/}
         }
-        System.out.println("Checksum succeed");
         return data;
     }
 
