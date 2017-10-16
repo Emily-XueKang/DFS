@@ -2565,6 +2565,19 @@ public final class StorageMessages {
      */
     edu.usfca.cs.dfs.StorageMessages.recoverReplicaCmdFromControllerOrBuilder getRecoverReplicaCmdOrBuilder();
 
+    /**
+     * <code>.readRepairFromCtrl readRepairRsp = 4;</code>
+     */
+    boolean hasReadRepairRsp();
+    /**
+     * <code>.readRepairFromCtrl readRepairRsp = 4;</code>
+     */
+    edu.usfca.cs.dfs.StorageMessages.readRepairFromCtrl getReadRepairRsp();
+    /**
+     * <code>.readRepairFromCtrl readRepairRsp = 4;</code>
+     */
+    edu.usfca.cs.dfs.StorageMessages.readRepairFromCtrlOrBuilder getReadRepairRspOrBuilder();
+
     public edu.usfca.cs.dfs.StorageMessages.StorageMessageWrapper.MsgCase getMsgCase();
   }
   /**
@@ -2652,6 +2665,20 @@ public final class StorageMessages {
               msgCase_ = 3;
               break;
             }
+            case 34: {
+              edu.usfca.cs.dfs.StorageMessages.readRepairFromCtrl.Builder subBuilder = null;
+              if (msgCase_ == 4) {
+                subBuilder = ((edu.usfca.cs.dfs.StorageMessages.readRepairFromCtrl) msg_).toBuilder();
+              }
+              msg_ =
+                  input.readMessage(edu.usfca.cs.dfs.StorageMessages.readRepairFromCtrl.parser(), extensionRegistry);
+              if (subBuilder != null) {
+                subBuilder.mergeFrom((edu.usfca.cs.dfs.StorageMessages.readRepairFromCtrl) msg_);
+                msg_ = subBuilder.buildPartial();
+              }
+              msgCase_ = 4;
+              break;
+            }
           }
         }
       } catch (com.google.protobuf.InvalidProtocolBufferException e) {
@@ -2683,6 +2710,7 @@ public final class StorageMessages {
       STORECHUNKMSG(1),
       RETRIEVECHUNKMSG(2),
       RECOVERREPLICACMD(3),
+      READREPAIRRSP(4),
       MSG_NOT_SET(0);
       private final int value;
       private MsgCase(int value) {
@@ -2701,6 +2729,7 @@ public final class StorageMessages {
           case 1: return STORECHUNKMSG;
           case 2: return RETRIEVECHUNKMSG;
           case 3: return RECOVERREPLICACMD;
+          case 4: return READREPAIRRSP;
           case 0: return MSG_NOT_SET;
           default: return null;
         }
@@ -2794,6 +2823,32 @@ public final class StorageMessages {
       return edu.usfca.cs.dfs.StorageMessages.recoverReplicaCmdFromController.getDefaultInstance();
     }
 
+    public static final int READREPAIRRSP_FIELD_NUMBER = 4;
+    /**
+     * <code>.readRepairFromCtrl readRepairRsp = 4;</code>
+     */
+    public boolean hasReadRepairRsp() {
+      return msgCase_ == 4;
+    }
+    /**
+     * <code>.readRepairFromCtrl readRepairRsp = 4;</code>
+     */
+    public edu.usfca.cs.dfs.StorageMessages.readRepairFromCtrl getReadRepairRsp() {
+      if (msgCase_ == 4) {
+         return (edu.usfca.cs.dfs.StorageMessages.readRepairFromCtrl) msg_;
+      }
+      return edu.usfca.cs.dfs.StorageMessages.readRepairFromCtrl.getDefaultInstance();
+    }
+    /**
+     * <code>.readRepairFromCtrl readRepairRsp = 4;</code>
+     */
+    public edu.usfca.cs.dfs.StorageMessages.readRepairFromCtrlOrBuilder getReadRepairRspOrBuilder() {
+      if (msgCase_ == 4) {
+         return (edu.usfca.cs.dfs.StorageMessages.readRepairFromCtrl) msg_;
+      }
+      return edu.usfca.cs.dfs.StorageMessages.readRepairFromCtrl.getDefaultInstance();
+    }
+
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -2815,6 +2870,9 @@ public final class StorageMessages {
       if (msgCase_ == 3) {
         output.writeMessage(3, (edu.usfca.cs.dfs.StorageMessages.recoverReplicaCmdFromController) msg_);
       }
+      if (msgCase_ == 4) {
+        output.writeMessage(4, (edu.usfca.cs.dfs.StorageMessages.readRepairFromCtrl) msg_);
+      }
       unknownFields.writeTo(output);
     }
 
@@ -2834,6 +2892,10 @@ public final class StorageMessages {
       if (msgCase_ == 3) {
         size += com.google.protobuf.CodedOutputStream
           .computeMessageSize(3, (edu.usfca.cs.dfs.StorageMessages.recoverReplicaCmdFromController) msg_);
+      }
+      if (msgCase_ == 4) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeMessageSize(4, (edu.usfca.cs.dfs.StorageMessages.readRepairFromCtrl) msg_);
       }
       size += unknownFields.getSerializedSize();
       memoizedSize = size;
@@ -2867,6 +2929,10 @@ public final class StorageMessages {
           result = result && getRecoverReplicaCmd()
               .equals(other.getRecoverReplicaCmd());
           break;
+        case 4:
+          result = result && getReadRepairRsp()
+              .equals(other.getReadRepairRsp());
+          break;
         case 0:
         default:
       }
@@ -2893,6 +2959,10 @@ public final class StorageMessages {
         case 3:
           hash = (37 * hash) + RECOVERREPLICACMD_FIELD_NUMBER;
           hash = (53 * hash) + getRecoverReplicaCmd().hashCode();
+          break;
+        case 4:
+          hash = (37 * hash) + READREPAIRRSP_FIELD_NUMBER;
+          hash = (53 * hash) + getReadRepairRsp().hashCode();
           break;
         case 0:
         default:
@@ -3071,6 +3141,13 @@ public final class StorageMessages {
             result.msg_ = recoverReplicaCmdBuilder_.build();
           }
         }
+        if (msgCase_ == 4) {
+          if (readRepairRspBuilder_ == null) {
+            result.msg_ = msg_;
+          } else {
+            result.msg_ = readRepairRspBuilder_.build();
+          }
+        }
         result.msgCase_ = msgCase_;
         onBuilt();
         return result;
@@ -3124,6 +3201,10 @@ public final class StorageMessages {
           }
           case RECOVERREPLICACMD: {
             mergeRecoverReplicaCmd(other.getRecoverReplicaCmd());
+            break;
+          }
+          case READREPAIRRSP: {
+            mergeReadRepairRsp(other.getReadRepairRsp());
             break;
           }
           case MSG_NOT_SET: {
@@ -3578,6 +3659,142 @@ public final class StorageMessages {
         msgCase_ = 3;
         onChanged();;
         return recoverReplicaCmdBuilder_;
+      }
+
+      private com.google.protobuf.SingleFieldBuilderV3<
+          edu.usfca.cs.dfs.StorageMessages.readRepairFromCtrl, edu.usfca.cs.dfs.StorageMessages.readRepairFromCtrl.Builder, edu.usfca.cs.dfs.StorageMessages.readRepairFromCtrlOrBuilder> readRepairRspBuilder_;
+      /**
+       * <code>.readRepairFromCtrl readRepairRsp = 4;</code>
+       */
+      public boolean hasReadRepairRsp() {
+        return msgCase_ == 4;
+      }
+      /**
+       * <code>.readRepairFromCtrl readRepairRsp = 4;</code>
+       */
+      public edu.usfca.cs.dfs.StorageMessages.readRepairFromCtrl getReadRepairRsp() {
+        if (readRepairRspBuilder_ == null) {
+          if (msgCase_ == 4) {
+            return (edu.usfca.cs.dfs.StorageMessages.readRepairFromCtrl) msg_;
+          }
+          return edu.usfca.cs.dfs.StorageMessages.readRepairFromCtrl.getDefaultInstance();
+        } else {
+          if (msgCase_ == 4) {
+            return readRepairRspBuilder_.getMessage();
+          }
+          return edu.usfca.cs.dfs.StorageMessages.readRepairFromCtrl.getDefaultInstance();
+        }
+      }
+      /**
+       * <code>.readRepairFromCtrl readRepairRsp = 4;</code>
+       */
+      public Builder setReadRepairRsp(edu.usfca.cs.dfs.StorageMessages.readRepairFromCtrl value) {
+        if (readRepairRspBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          msg_ = value;
+          onChanged();
+        } else {
+          readRepairRspBuilder_.setMessage(value);
+        }
+        msgCase_ = 4;
+        return this;
+      }
+      /**
+       * <code>.readRepairFromCtrl readRepairRsp = 4;</code>
+       */
+      public Builder setReadRepairRsp(
+          edu.usfca.cs.dfs.StorageMessages.readRepairFromCtrl.Builder builderForValue) {
+        if (readRepairRspBuilder_ == null) {
+          msg_ = builderForValue.build();
+          onChanged();
+        } else {
+          readRepairRspBuilder_.setMessage(builderForValue.build());
+        }
+        msgCase_ = 4;
+        return this;
+      }
+      /**
+       * <code>.readRepairFromCtrl readRepairRsp = 4;</code>
+       */
+      public Builder mergeReadRepairRsp(edu.usfca.cs.dfs.StorageMessages.readRepairFromCtrl value) {
+        if (readRepairRspBuilder_ == null) {
+          if (msgCase_ == 4 &&
+              msg_ != edu.usfca.cs.dfs.StorageMessages.readRepairFromCtrl.getDefaultInstance()) {
+            msg_ = edu.usfca.cs.dfs.StorageMessages.readRepairFromCtrl.newBuilder((edu.usfca.cs.dfs.StorageMessages.readRepairFromCtrl) msg_)
+                .mergeFrom(value).buildPartial();
+          } else {
+            msg_ = value;
+          }
+          onChanged();
+        } else {
+          if (msgCase_ == 4) {
+            readRepairRspBuilder_.mergeFrom(value);
+          }
+          readRepairRspBuilder_.setMessage(value);
+        }
+        msgCase_ = 4;
+        return this;
+      }
+      /**
+       * <code>.readRepairFromCtrl readRepairRsp = 4;</code>
+       */
+      public Builder clearReadRepairRsp() {
+        if (readRepairRspBuilder_ == null) {
+          if (msgCase_ == 4) {
+            msgCase_ = 0;
+            msg_ = null;
+            onChanged();
+          }
+        } else {
+          if (msgCase_ == 4) {
+            msgCase_ = 0;
+            msg_ = null;
+          }
+          readRepairRspBuilder_.clear();
+        }
+        return this;
+      }
+      /**
+       * <code>.readRepairFromCtrl readRepairRsp = 4;</code>
+       */
+      public edu.usfca.cs.dfs.StorageMessages.readRepairFromCtrl.Builder getReadRepairRspBuilder() {
+        return getReadRepairRspFieldBuilder().getBuilder();
+      }
+      /**
+       * <code>.readRepairFromCtrl readRepairRsp = 4;</code>
+       */
+      public edu.usfca.cs.dfs.StorageMessages.readRepairFromCtrlOrBuilder getReadRepairRspOrBuilder() {
+        if ((msgCase_ == 4) && (readRepairRspBuilder_ != null)) {
+          return readRepairRspBuilder_.getMessageOrBuilder();
+        } else {
+          if (msgCase_ == 4) {
+            return (edu.usfca.cs.dfs.StorageMessages.readRepairFromCtrl) msg_;
+          }
+          return edu.usfca.cs.dfs.StorageMessages.readRepairFromCtrl.getDefaultInstance();
+        }
+      }
+      /**
+       * <code>.readRepairFromCtrl readRepairRsp = 4;</code>
+       */
+      private com.google.protobuf.SingleFieldBuilderV3<
+          edu.usfca.cs.dfs.StorageMessages.readRepairFromCtrl, edu.usfca.cs.dfs.StorageMessages.readRepairFromCtrl.Builder, edu.usfca.cs.dfs.StorageMessages.readRepairFromCtrlOrBuilder> 
+          getReadRepairRspFieldBuilder() {
+        if (readRepairRspBuilder_ == null) {
+          if (!(msgCase_ == 4)) {
+            msg_ = edu.usfca.cs.dfs.StorageMessages.readRepairFromCtrl.getDefaultInstance();
+          }
+          readRepairRspBuilder_ = new com.google.protobuf.SingleFieldBuilderV3<
+              edu.usfca.cs.dfs.StorageMessages.readRepairFromCtrl, edu.usfca.cs.dfs.StorageMessages.readRepairFromCtrl.Builder, edu.usfca.cs.dfs.StorageMessages.readRepairFromCtrlOrBuilder>(
+                  (edu.usfca.cs.dfs.StorageMessages.readRepairFromCtrl) msg_,
+                  getParentForChildren(),
+                  isClean());
+          msg_ = null;
+        }
+        msgCase_ = 4;
+        onChanged();;
+        return readRepairRspBuilder_;
       }
       public final Builder setUnknownFields(
           final com.google.protobuf.UnknownFieldSet unknownFields) {
@@ -15377,48 +15594,49 @@ public final class StorageMessages {
       "uccess\030\001 \001(\010\"=\n\030RetrieveRequestToStorage" +
       "\022\020\n\010fileName\030\001 \001(\t\022\017\n\007chunkId\030\002 \001(\005\"+\n\033R" +
       "etrieveResponseFromStorage\022\014\n\004data\030\001 \001(\014" +
-      "\"\272\001\n\025StorageMessageWrapper\022$\n\rstoreChunk" +
+      "\"\350\001\n\025StorageMessageWrapper\022$\n\rstoreChunk" +
       "Msg\030\001 \001(\0132\013.StoreChunkH\000\0225\n\020retrieveChun" +
       "kMsg\030\002 \001(\0132\031.RetrieveRequestToStorageH\000\022",
       "=\n\021recoverReplicaCmd\030\003 \001(\0132 .recoverRepl" +
-      "icaCmdFromControllerH\000B\005\n\003msg\"d\n\030StoreRe" +
-      "questToController\022\020\n\010fileName\030\001 \001(\t\022\017\n\007c" +
-      "hunkId\030\002 \001(\005\022\020\n\010fileSize\030\003 \001(\003\022\023\n\013numOfC" +
-      "hunks\030\004 \001(\005\";\n\033StoreResponseFromControll" +
-      "er\022\034\n\004info\030\001 \003(\0132\016.StoreNodeInfo\"e\n\036Upda" +
-      "teChunkReplicaToController\022\020\n\010fileName\030\001" +
-      " \001(\t\022\017\n\007chunkId\030\002 \001(\005\022 \n\010nodeInfo\030\003 \001(\0132" +
-      "\016.StoreNodeInfo\"/\n\033RetrieveRequestToCont" +
-      "roller\022\020\n\010fileName\030\001 \001(\t\"\244\002\n\030ControllerM",
-      "essageWrapper\0221\n\014storeFileMsg\030\001 \001(\0132\031.St" +
-      "oreRequestToControllerH\000\0227\n\017retrieveFile" +
-      "Msg\030\002 \001(\0132\034.RetrieveRequestToControllerH" +
-      "\000\022;\n\020updateReplicaMsg\030\003 \001(\0132\037.UpdateChun" +
-      "kReplicaToControllerH\000\022$\n\014heartbeatMsg\030\004" +
-      " \001(\0132\014.SNHeartBeatH\000\0222\n\021replicacorruptMs" +
-      "g\030\005 \001(\0132\025.replicaCorruptFromSNH\000B\005\n\003msg\"" +
-      ";\n(UpdateChunkReplicaResponseFromControl" +
-      "ler\022\017\n\007success\030\001 \001(\010\"0\n\rStoreNodeInfo\022\021\n" +
-      "\tipaddress\030\001 \001(\t\022\014\n\004port\030\002 \001(\005\"\\\n\rChunkM",
-      "etaData\022\020\n\010fileName\030\001 \001(\t\022\017\n\007chunkId\030\002 \001" +
-      "(\005\022(\n\020replicaLocations\030\003 \003(\0132\016.StoreNode" +
-      "Info\"\177\n\014FileMetaData\022\020\n\010fileName\030\001 \001(\t\022\023" +
-      "\n\013numOfChunks\030\002 \001(\005\022\020\n\010fileSize\030\003 \001(\003\022!\n" +
-      "\tchunkList\030\004 \003(\0132\016.ChunkMetaData\022\023\n\013isCo" +
-      "mpleted\030\005 \001(\010\"_\n\013SNHeartBeat\022 \n\006chunks\030\001" +
-      " \003(\0132\020.SimplechunkInfo\022\r\n\005space\030\002 \001(\003\022\021\n" +
-      "\tipaddress\030\003 \001(\t\022\014\n\004port\030\004 \001(\005\"4\n\017Simple" +
-      "chunkInfo\022\020\n\010fileName\030\001 \001(\t\022\017\n\007chunkId\030\002" +
-      " \001(\005\"\204\001\n\037recoverReplicaCmdFromController",
-      "\022\036\n\006target\030\001 \001(\0132\016.StoreNodeInfo\022\036\n\006sour" +
-      "ce\030\002 \001(\0132\016.StoreNodeInfo\022!\n\007replica\030\003 \001(" +
-      "\0132\020.SimplechunkInfo\"1\n\027recoverReplicaRsp" +
-      "FromSN\022\026\n\016replicaSuccess\030\001 \001(\010\"c\n\024replic" +
-      "aCorruptFromSN\022\020\n\010fileName\030\001 \001(\t\022\017\n\007chun" +
-      "kId\030\002 \001(\005\022(\n\020corruptChunkInSN\030\003 \001(\0132\016.St" +
-      "oreNodeInfo\"+\n\022readRepairFromCtrl\022\025\n\rrep" +
-      "airSuccess\030\001 \001(\010B\022\n\020edu.usfca.cs.dfsb\006pr" +
-      "oto3"
+      "icaCmdFromControllerH\000\022,\n\rreadRepairRsp\030" +
+      "\004 \001(\0132\023.readRepairFromCtrlH\000B\005\n\003msg\"d\n\030S" +
+      "toreRequestToController\022\020\n\010fileName\030\001 \001(" +
+      "\t\022\017\n\007chunkId\030\002 \001(\005\022\020\n\010fileSize\030\003 \001(\003\022\023\n\013" +
+      "numOfChunks\030\004 \001(\005\";\n\033StoreResponseFromCo" +
+      "ntroller\022\034\n\004info\030\001 \003(\0132\016.StoreNodeInfo\"e" +
+      "\n\036UpdateChunkReplicaToController\022\020\n\010file" +
+      "Name\030\001 \001(\t\022\017\n\007chunkId\030\002 \001(\005\022 \n\010nodeInfo\030" +
+      "\003 \001(\0132\016.StoreNodeInfo\"/\n\033RetrieveRequest",
+      "ToController\022\020\n\010fileName\030\001 \001(\t\"\244\002\n\030Contr" +
+      "ollerMessageWrapper\0221\n\014storeFileMsg\030\001 \001(" +
+      "\0132\031.StoreRequestToControllerH\000\0227\n\017retrie" +
+      "veFileMsg\030\002 \001(\0132\034.RetrieveRequestToContr" +
+      "ollerH\000\022;\n\020updateReplicaMsg\030\003 \001(\0132\037.Upda" +
+      "teChunkReplicaToControllerH\000\022$\n\014heartbea" +
+      "tMsg\030\004 \001(\0132\014.SNHeartBeatH\000\0222\n\021replicacor" +
+      "ruptMsg\030\005 \001(\0132\025.replicaCorruptFromSNH\000B\005" +
+      "\n\003msg\";\n(UpdateChunkReplicaResponseFromC" +
+      "ontroller\022\017\n\007success\030\001 \001(\010\"0\n\rStoreNodeI",
+      "nfo\022\021\n\tipaddress\030\001 \001(\t\022\014\n\004port\030\002 \001(\005\"\\\n\r" +
+      "ChunkMetaData\022\020\n\010fileName\030\001 \001(\t\022\017\n\007chunk" +
+      "Id\030\002 \001(\005\022(\n\020replicaLocations\030\003 \003(\0132\016.Sto" +
+      "reNodeInfo\"\177\n\014FileMetaData\022\020\n\010fileName\030\001" +
+      " \001(\t\022\023\n\013numOfChunks\030\002 \001(\005\022\020\n\010fileSize\030\003 " +
+      "\001(\003\022!\n\tchunkList\030\004 \003(\0132\016.ChunkMetaData\022\023" +
+      "\n\013isCompleted\030\005 \001(\010\"_\n\013SNHeartBeat\022 \n\006ch" +
+      "unks\030\001 \003(\0132\020.SimplechunkInfo\022\r\n\005space\030\002 " +
+      "\001(\003\022\021\n\tipaddress\030\003 \001(\t\022\014\n\004port\030\004 \001(\005\"4\n\017" +
+      "SimplechunkInfo\022\020\n\010fileName\030\001 \001(\t\022\017\n\007chu",
+      "nkId\030\002 \001(\005\"\204\001\n\037recoverReplicaCmdFromCont" +
+      "roller\022\036\n\006target\030\001 \001(\0132\016.StoreNodeInfo\022\036" +
+      "\n\006source\030\002 \001(\0132\016.StoreNodeInfo\022!\n\007replic" +
+      "a\030\003 \001(\0132\020.SimplechunkInfo\"1\n\027recoverRepl" +
+      "icaRspFromSN\022\026\n\016replicaSuccess\030\001 \001(\010\"c\n\024" +
+      "replicaCorruptFromSN\022\020\n\010fileName\030\001 \001(\t\022\017" +
+      "\n\007chunkId\030\002 \001(\005\022(\n\020corruptChunkInSN\030\003 \001(" +
+      "\0132\016.StoreNodeInfo\"+\n\022readRepairFromCtrl\022" +
+      "\025\n\rrepairSuccess\030\001 \001(\010B\022\n\020edu.usfca.cs.d" +
+      "fsb\006proto3"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
@@ -15461,7 +15679,7 @@ public final class StorageMessages {
     internal_static_StorageMessageWrapper_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_StorageMessageWrapper_descriptor,
-        new java.lang.String[] { "StoreChunkMsg", "RetrieveChunkMsg", "RecoverReplicaCmd", "Msg", });
+        new java.lang.String[] { "StoreChunkMsg", "RetrieveChunkMsg", "RecoverReplicaCmd", "ReadRepairRsp", "Msg", });
     internal_static_StoreRequestToController_descriptor =
       getDescriptor().getMessageTypes().get(5);
     internal_static_StoreRequestToController_fieldAccessorTable = new

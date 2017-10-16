@@ -218,7 +218,7 @@ public class StorageNode {
                     .setStoreChunkMsg(chunk)
                     .build();
             msgWrapper.writeDelimitedTo(storageSock.getOutputStream());
-            System.out.println("Sent replica to recovery target SN " + target.getIpaddress());
+            System.out.println("Sent replica to recovery target SN " + target.getIpaddress()+" at port "+target.getPort());
             StoreResponseFromStorage storeResp = StoreResponseFromStorage.parseDelimitedFrom(storageSock.getInputStream());
             boolean recoverSuccess = storeResp.getSuccess();
             System.out.println("Recover chunk success: " + recoverSuccess);
@@ -318,7 +318,7 @@ public class StorageNode {
                         .build();
                 Socket contrlSock = new Socket(CONTROLLER_IP, Controller.CONTROLLER_PORT);
                 msgWrapper.writeDelimitedTo(contrlSock.getOutputStream());
-                System.out.println("Need to recover chunk "+fileName+"_"+chunkId+" in node "+sni.getIpaddress());
+                System.out.println("Need to recover chunk "+fileName+"_"+chunkId+" in node "+sni.getIpaddress()+" at port "+sni.getPort());
                 System.out.println("Sent replica corrupt msg to controller");
                 readRepairFromCtrl resp = readRepairFromCtrl.parseDelimitedFrom(contrlSock.getInputStream());
                 boolean recovered = resp.getRepairSuccess();

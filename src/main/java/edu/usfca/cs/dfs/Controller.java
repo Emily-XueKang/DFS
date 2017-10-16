@@ -346,7 +346,10 @@ public class Controller {
             readRepairFromCtrl repair = readRepairFromCtrl.newBuilder()
                     .setRepairSuccess(rrsucsess)
                     .build();
-            repair.writeDelimitedTo(readSnSocket.getOutputStream());
+            StorageMessageWrapper msgWrapper2 = StorageMessageWrapper.newBuilder()
+                    .setReadRepairRsp(repair)
+                    .build();
+            msgWrapper2.writeDelimitedTo(readSnSocket.getOutputStream());
             readSnSocket.close();
 
         } catch (IOException e) {
