@@ -116,6 +116,7 @@ public class ChunksRetriever {
         @Override
         public void run() {
             String chunkFileName = fileName + "_" + chunkId;
+            System.out.println("Retreiving file from storage node "+ipSR);
 
             try {
                 Socket storageSock = new Socket(ipSR, portSR);
