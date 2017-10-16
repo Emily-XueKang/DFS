@@ -108,9 +108,11 @@ public class StorageNode {
             } else if (msgWrapper.hasRetrieveChunkMsg()) {
                 RetrieveRequestToStorage request = msgWrapper.getRetrieveChunkMsg();
                 ByteString data = retrieveChunk(request.getFileName(), request.getChunkId());
+                System.out.println("got data size of "+data.size());
                 RetrieveResponseFromStorage resp = RetrieveResponseFromStorage.newBuilder()
                         .setData(data)
                         .build();
+                System.out.println("sent data to client.");
                 resp.writeDelimitedTo(socket.getOutputStream());
             } else if (msgWrapper.hasRecoverReplicaCmd()) {
                 recoverReplicaCmdFromController recoverCommand = msgWrapper.getRecoverReplicaCmd();
@@ -342,9 +344,11 @@ public class StorageNode {
                 StorageMessageWrapper msgWrapper2 = StorageMessageWrapper
                         .parseDelimitedFrom(contrlSock.getInputStream());
                 readRepairFromCtrl resp = msgWrapper2.getReadRepairRsp();
+                System.out.println("Got response from Controler");
                 boolean recovered = resp.getRepairSuccess();
                 if(recovered){
                     data = ByteString.readFrom(fs,Client.CHUNK_SIZE);
+                    System.out.println("recovered == " + recovered);
                 }
                 contrlSock.close();
             }
