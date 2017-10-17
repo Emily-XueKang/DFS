@@ -62,10 +62,13 @@ public class ChunksRetriever {
         FileOutputStream fs = null;
         String outputFileName =  fileMetaData.getFileName() + "_received";
         int numOfChunks = fileMetaData.getNumOfChunks();
+        boolean append = true;
+        if(numOfChunks==1) append = true;
+        if(numOfChunks>1) append = false;
         try {
             for (int i = 0; i < numOfChunks - 1; i++) {
                 ByteString data = dataMap.get(i);
-                fs = new FileOutputStream(outputFileName, true);
+                fs = new FileOutputStream(outputFileName, append);
                 data.writeTo(fs);
             }
             // handle last chunk specially since the chunk is likely not full of useful data
