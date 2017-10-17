@@ -75,6 +75,7 @@ public class StorageNode {
                             .build();
                     Socket controllerSock = new Socket(CONTROLLER_IP, Controller.CONTROLLER_PORT);
                     msgWrapper.writeDelimitedTo(controllerSock.getOutputStream());
+                    System.out.println("freespace=="+freespace);
                     System.out.println("Sent heartbeat...");
                 } catch (IOException e) {
                     System.out.println("Failed to send update info through heartbeat");

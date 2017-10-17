@@ -354,8 +354,7 @@ public class Controller {
                     .build();
             msgWrapper2.writeDelimitedTo(socket.getOutputStream());
             System.out.println("Controller sent repair result to corrupted node");
-            socket.close();
-
+            //socket.close();
         } catch (IOException e) {
             e.printStackTrace();
         }

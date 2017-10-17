@@ -21,7 +21,7 @@ public class Client {
     throws Exception{
         options.addOption("w", "write", true, "write file");
         options.addOption("r", "read", true, "read file");
-        options.addOption("l", "list", true, "list files");
+        options.addOption("l", "list", false, "list files");
 
         CommandLineParser parser = new BasicParser();
         CommandLine cmd = null;
