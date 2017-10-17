@@ -63,8 +63,8 @@ public class ChunksRetriever {
         String outputFileName =  fileMetaData.getFileName() + "_received";
         int numOfChunks = fileMetaData.getNumOfChunks();
         boolean append = true;
-        if(numOfChunks==1) append = true;
-        if(numOfChunks>1) append = false;
+        if(numOfChunks==1) append = false;
+        if(numOfChunks>1) append = true;
         try {
             for (int i = 0; i < numOfChunks - 1; i++) {
                 ByteString data = dataMap.get(i);
@@ -77,7 +77,7 @@ public class ChunksRetriever {
             byte[] lastBytes = new byte[lastChunkSize];
             data.copyTo(lastBytes, 0, 0, lastChunkSize);
             System.out.println("last chunk size: " + lastChunkSize);
-            fs = new FileOutputStream(outputFileName, true);
+            fs = new FileOutputStream(outputFileName,append);
             fs.write(lastBytes);
             System.out.println("Chunks combined to file successfully");
         } catch (IOException e) {
