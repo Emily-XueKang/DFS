@@ -43,20 +43,6 @@ public class Client {
         } catch (Exception e) {
             System.out.println("can't parse command line argument");
         }
-
-//        c.writeFile("/home2/xkang3/test_file_1.bin");
-//        TimeUnit.SECONDS.sleep(5);
-//        c.writeFile("/home2/xkang3/test_file_2.bin");
-//        TimeUnit.SECONDS.sleep(5);
-//        c.writeFile("/home2/xkang3/test_file_3.bin");
-//        TimeUnit.SECONDS.sleep(5);
-//        c.writeFile("/home2/xkang3/test_file_4.bin");
-//        TimeUnit.SECONDS.sleep(5);
-//        c.writeFile("/home2/xkang3/test_file_5.bin");
-
-        //TimeUnit.SECONDS.sleep(10);
-        //c.retrieveFile("/home2/xkang3/testfile.JPG");
-        //c.retrieveFile("/home2/xkang3/chunktest.txt");
     }
 
     public boolean writeFile(String fileName) {
@@ -190,6 +176,26 @@ public class Client {
     }
 
     public void listFiles(){
-        System.out.println("Files in DFS:");
+        try {
+            Socket controllerSock = new Socket("bass01", Controller.CONTROLLER_PORT);
+            listFilesFromClient lf = listFilesFromClient.newBuilder()
+                    .build();
+            ControllerMessageWrapper flrequest = ControllerMessageWrapper.newBuilder()
+                    .setListfileMsg(lf)
+                    .build();
+            flrequest.writeDelimitedTo(controllerSock.getOutputStream());
+            FileListFromController flresponse = FileListFromController.parseDelimitedFrom(controllerSock.getInputStream());
+            List<String> filenames = flresponse.getFilenamesList();
+            long availableSpace = flresponse.getSpace();
+            controllerSock.close();
+            System.out.println("Files in DFS:");
+            for(String fn:filenames){
+                System.out.println(fn);
+            }
+            System.out.println("Space in DFS: "+availableSpace);
+        } catch (IOException e) {
+            System.out.println("Fail to query controller Node for file list ");
+            e.printStackTrace();
+        }
     }
 }

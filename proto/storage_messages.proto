@@ -58,6 +58,7 @@ message ControllerMessageWrapper {
         UpdateChunkReplicaToController updateReplicaMsg = 3;
         SNHeartBeat heartbeatMsg = 4;
         replicaCorruptFromSN replicacorruptMsg = 5;
+        listFilesFromClient listfileMsg = 6;
     }
 }
 
@@ -113,6 +114,14 @@ message replicaCorruptFromSN {
 
 message readRepairFromCtrl {
     bool repairSuccess = 1;
+}
+
+message listFilesFromClient {
+}
+
+message FileListFromController {
+    repeated string filenames = 1;
+    int64 space = 2;
 }
 
 

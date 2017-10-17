@@ -17,7 +17,7 @@ public class Controller {
     private static ConcurrentHashMap<String, FileMetaData> files = new ConcurrentHashMap<>();
     private static ConcurrentHashMap<String, ConcurrentHashMap<Integer, ChunkMetaData>> fileChunks =
             new ConcurrentHashMap<>();    //map filename to a map of chunkid--chunkmetadata
-
+    private static long availableSpace=0;
     private static Random rand = new Random();
     private static Socket socket;
 
@@ -48,6 +48,8 @@ public class Controller {
                     handleHeartBeat(msgWrapper.getHeartbeatMsg());
                 } else if(msgWrapper.hasReplicacorruptMsg()){
                     handleRepCorruption(msgWrapper.getReplicacorruptMsg());
+                } else if(msgWrapper.hasListfileMsg()){
+                    handleFileList();
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -217,6 +219,7 @@ public class Controller {
                 files.put(fileName, fileMetadata);
             }
         }
+        availableSpace+=heartbeatMsg.getSpace();
     }
 
     private static void handleRetrieveFile(RetrieveRequestToController retrieveFileMsg) {
@@ -358,6 +361,18 @@ public class Controller {
         }
     }
 
+    public static void handleFileList(){
+        ArrayList<String> fileNames = (ArrayList<String>) fileChunks.keys();
+        FileListFromController flresponse = FileListFromController.newBuilder()
+                .addAllFilenames(fileNames)
+                .setSpace(availableSpace)
+                .build();
+        try {
+            flresponse.writeDelimitedTo(socket.getOutputStream());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
     /* deprecated
     private static void handleUpdateChunkReplica(UpdateChunkReplicaToController updateReplicaMsg) {
         String fileName = updateReplicaMsg.getFileName();
