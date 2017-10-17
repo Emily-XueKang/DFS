@@ -368,9 +368,10 @@ public class Controller {
         for(String fn:fns){
             fileNames.add(fn);
         }
-        Set<Long> spaceSet = (Set<Long>) activeNodesSpaceMap.values();
-        for(Long s:spaceSet){
-            availableSpace+=s;
+        Set<Map.Entry<StoreNodeInfo,Long>> spaceEntrys = activeNodesSpaceMap.entrySet();
+        availableSpace = 0; //re-calculate the available space
+        for(Map.Entry<StoreNodeInfo,Long> ns : spaceEntrys){
+            availableSpace+=ns.getValue();
         }
         FileListFromController flresponse = FileListFromController.newBuilder()
                 .addAllFilenames(fileNames)

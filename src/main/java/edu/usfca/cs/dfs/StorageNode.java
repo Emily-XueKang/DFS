@@ -109,12 +109,20 @@ public class StorageNode {
             } else if (msgWrapper.hasRetrieveChunkMsg()) {
                 RetrieveRequestToStorage request = msgWrapper.getRetrieveChunkMsg();
                 ByteString data = retrieveChunk(request.getFileName(), request.getChunkId());
-                System.out.println("got data size of "+data.size());
-                RetrieveResponseFromStorage resp = RetrieveResponseFromStorage.newBuilder()
-                        .setData(data)
-                        .build();
-                System.out.println("sent data to client.");
-                resp.writeDelimitedTo(socket.getOutputStream());
+                if(data!=null){
+                    System.out.println("got data size of "+data.size());
+                    RetrieveResponseFromStorage resp = RetrieveResponseFromStorage.newBuilder()
+                            .setData(data)
+                            .build();
+                    System.out.println("sent data to client.");
+                    resp.writeDelimitedTo(socket.getOutputStream());
+                }
+                else{
+                    System.out.println("chunk corrupt, recovering, client need to retry");
+                    RetrieveResponseFromStorage resp = RetrieveResponseFromStorage.newBuilder()
+                            .build();
+                    resp.writeDelimitedTo(socket.getOutputStream());
+                }
             } else if (msgWrapper.hasRecoverReplicaCmd()) {
                 recoverReplicaCmdFromController recoverCommand = msgWrapper.getRecoverReplicaCmd();
                 boolean success = recoverReplica(recoverCommand);
@@ -352,6 +360,7 @@ public class StorageNode {
                     System.out.println("Recovered == " + recovered);
                 }
                 contrlSock.close();
+                //in the case of retrieving currupted chunk, return null, and tell client to retry
             }
             else{
                 System.out.println("Checksum succeed");
