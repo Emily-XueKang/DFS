@@ -17,7 +17,8 @@ public class Controller {
     private static ConcurrentHashMap<String, FileMetaData> files = new ConcurrentHashMap<>();
     private static ConcurrentHashMap<String, ConcurrentHashMap<Integer, ChunkMetaData>> fileChunks =
             new ConcurrentHashMap<>();    //map filename to a map of chunkid--chunkmetadata
-    private static long availableSpace=0;
+    private static ConcurrentHashMap<StoreNodeInfo, Long> activeNodesSpaceMap = new ConcurrentHashMap<>();
+    private static long availableSpace = 0;
     private static Random rand = new Random();
     private static Socket socket;
 
@@ -71,6 +72,7 @@ public class Controller {
                         StoreNodeInfo inactiveNode = entry.getKey();
                         activeNodes.remove(inactiveNode);
                         activeNodesTsMap.remove(inactiveNode);
+                        activeNodesSpaceMap.remove(inactiveNode);
                         System.out.println("Inactive node detected at ip " + inactiveNode.getIpaddress() + " port " + inactiveNode.getPort());
 
                         //1.iterate through all chunks in this dead node
@@ -164,7 +166,8 @@ public class Controller {
         }
         // update the latest active timestamp to the storage node
         activeNodesTsMap.put(currentNode, System.currentTimeMillis());
-
+        //update latest space records in this storage node
+        activeNodesSpaceMap.put(currentNode,heartbeatMsg.getSpace());
         HashSet<SimplechunkInfo> newChunkSet = new HashSet<SimplechunkInfo>(snci);
         if (!SNToChunkMap.containsKey(currentNode)) {
             SNToChunkMap.put(currentNode, newChunkSet);
@@ -219,7 +222,6 @@ public class Controller {
                 files.put(fileName, fileMetadata);
             }
         }
-        availableSpace+=heartbeatMsg.getSpace();
     }
 
     private static void handleRetrieveFile(RetrieveRequestToController retrieveFileMsg) {
@@ -361,7 +363,15 @@ public class Controller {
     }
 
     public static void handleFileList(){
-        ArrayList<String> fileNames = (ArrayList<String>) fileChunks.keys();
+        ArrayList<String> fileNames = new ArrayList<>();
+        Set<String> fns = fileChunks.keySet();
+        for(String fn:fns){
+            fileNames.add(fn);
+        }
+        Set<Long> spaceSet = (Set<Long>) activeNodesSpaceMap.values();
+        for(Long s:spaceSet){
+            availableSpace+=s;
+        }
         FileListFromController flresponse = FileListFromController.newBuilder()
                 .addAllFilenames(fileNames)
                 .setSpace(availableSpace)

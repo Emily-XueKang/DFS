@@ -130,10 +130,14 @@ public class ChunksRetriever {
                 msgWrapper.writeDelimitedTo(storageSock.getOutputStream());
                 RetrieveResponseFromStorage resp =
                         RetrieveResponseFromStorage.parseDelimitedFrom(storageSock.getInputStream());
-
                 ByteString data = resp.getData();
-                dataMap.put(chunkId, data); //retrieve to client memory, then combine from memory to disk
-                System.out.println("Retrieved chunk: " + chunkFileName);
+                if(data!=null){
+                    dataMap.put(chunkId, data); //retrieve to client memory, then combine from memory to disk
+                    System.out.println("Retrieved chunk: " + chunkFileName);
+                }else if(data==null){
+                    System.out.println("Chunk data corrupted, need to retry.");
+                }
+
             } catch (IOException e) {
                System.out.println("Unable to process chunk: " + chunkFileName);
                System.out.println(e.getStackTrace());

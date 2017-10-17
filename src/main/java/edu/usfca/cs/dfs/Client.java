@@ -192,7 +192,7 @@ public class Client {
             for(String fn:filenames){
                 System.out.println(fn);
             }
-            System.out.println("Space in DFS: "+availableSpace);
+            System.out.println("Space in DFS: "+availableSpace/1048576.0 + " MB");
         } catch (IOException e) {
             System.out.println("Fail to query controller Node for file list ");
             e.printStackTrace();
